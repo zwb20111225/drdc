@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.os.UserManager
 import android.system.Os
+import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -61,7 +62,9 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
         SettingsRepositoryImpl().syncLauncherIconState()
 
         val superUserViewModel = ViewModelProvider(this)[SuperUserViewModel::class.java]
-        superUserViewModel.loadAppList()
+        // Preload only; never let a JNI/profile hiccup take the whole process down at startup.
+        runCatching { superUserViewModel.loadAppList() }
+            .onFailure { Log.w("DRDC", "preload app list failed", it) }
 
         val webroot = File(dataDir, "webroot")
         if (!webroot.exists()) {
