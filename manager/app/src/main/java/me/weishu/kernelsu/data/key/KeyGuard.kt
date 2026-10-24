@@ -59,6 +59,25 @@ object KeyGuard {
     }
 
     private suspend fun refreshLocked(force: Boolean) {
+        try {
+            refreshLockedInner(force)
+        } catch (e: Throwable) {
+            // Never let an unexpected error here kill the app; fall back to the local token.
+            val stored = appContext?.let { TokenStore.load(it) }
+            state.value = when {
+                stored == null -> KeyState.NeedActivation()
+                stored.tokenExpiresAt > System.currentTimeMillis() ->
+                    KeyState.Active(stored.type, stored.cardExpireAt)
+
+                System.currentTimeMillis() - stored.lastValidatedAt < GRACE_MS ->
+                    KeyState.Active(stored.type, stored.cardExpireAt, grace = true)
+
+                else -> KeyState.NeedActivation("offline_expired")
+            }
+        }
+    }
+
+    private suspend fun refreshLockedInner(force: Boolean) {
         val context = appContext ?: return
         val stored = TokenStore.load(context)
         if (stored == null) {
@@ -114,6 +133,8 @@ object KeyGuard {
             } catch (e: KeyError) {
                 Result.failure(e)
             } catch (e: IOException) {
+                Result.failure(e)
+            } catch (e: Throwable) {
                 Result.failure(e)
             }
         }
