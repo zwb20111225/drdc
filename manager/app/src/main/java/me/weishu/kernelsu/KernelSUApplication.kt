@@ -40,6 +40,11 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
 
     override fun onCreate() {
         super.onCreate()
+        // Capture crashes to the public Downloads folder so users can send them
+        // without root or a PC (installed before the user-unlocked check).
+        Thread.setDefaultUncaughtExceptionHandler(
+            CrashLogger(this, Thread.getDefaultUncaughtExceptionHandler())
+        )
         ksuApp = this
 
         if (!isUserUnlocked()) {
