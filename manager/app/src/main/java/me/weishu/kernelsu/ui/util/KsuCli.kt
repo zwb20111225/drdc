@@ -89,25 +89,30 @@ fun Uri.getFileName(context: Context): String? {
 
 fun createRootShell(globalMnt: Boolean = false): Shell {
     Shell.enableVerboseLogging = BuildConfig.DEBUG
-    val builder = Shell.Builder.create()
-    return try {
-        if (globalMnt) {
-            builder.build(getKsuDaemonPath(), "debug", "su", "-g")
-        } else {
-            builder.build(getKsuDaemonPath(), "debug", "su")
-        }
-    } catch (e: Throwable) {
-        Log.w(TAG, "ksu failed: ", e)
+
+    // Only use our own daemon as the shell backend when the DRDC kernel is loaded.
+    // On a device rooted by another manager (KSU/Magisk) the daemon cannot talk to its
+    // driver and the shell would hang, which also hides "direct install" in the UI.
+    val drdcLoaded = runCatching { Natives.version > 0 }.getOrDefault(false)
+    if (drdcLoaded) {
         try {
-            if (globalMnt) {
-                builder.build("su", "-mm")
+            val builder = Shell.Builder.create()
+            return if (globalMnt) {
+                builder.build(getKsuDaemonPath(), "debug", "su", "-g")
             } else {
-                builder.build("su")
+                builder.build(getKsuDaemonPath(), "debug", "su")
             }
         } catch (e: Throwable) {
-            Log.e(TAG, "su failed: ", e)
-            builder.build("sh")
+            Log.w(TAG, "drdcd shell failed, falling back to su", e)
         }
+    }
+
+    return try {
+        val builder = Shell.Builder.create()
+        if (globalMnt) builder.build("su", "-mm") else builder.build("su")
+    } catch (e: Throwable) {
+        Log.e(TAG, "su failed: ", e)
+        Shell.Builder.create().build("sh")
     }
 }
 
