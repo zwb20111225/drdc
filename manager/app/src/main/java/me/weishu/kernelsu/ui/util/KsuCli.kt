@@ -42,8 +42,15 @@ import java.util.zip.ZipFile
 private const val TAG = "KsuCli"
 
 private fun getKsuDaemonPath(): String {
-    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libdrdcd.so"
+    val bundled = File(ksuApp.applicationInfo.nativeLibraryDir, "libdrdcd.so")
+    if (bundled.exists()) return bundled.absolutePath
+    // Repacked builds normally include the daemon; locally built APKs may not. In that
+    // case use the copy installed by the root solution so boot-info / module commands
+    // keep working instead of failing with an empty KMI.
+    return INSTALLED_DAEMON_PATH
 }
+
+private const val INSTALLED_DAEMON_PATH = "/data/adb/drdcd"
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
     constructor(result: Shell.Result, showReboot: Boolean) : this(result.code, result.err.joinToString("\n"), showReboot)
