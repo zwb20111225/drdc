@@ -309,6 +309,7 @@
     <string name="keys_error_rate">請求過於頻繁，請稍後再試</string>
     <string name="keys_error_signature">用戶端驗證失敗，請更新應用</string>
     <string name="keys_error_network">網路錯誤，請檢查連線</string>
+    <string name="keys_error_network_detail">網路錯誤：%1$s</string>
     <string name="keys_error_offline_expired">離線時間過長，請連線後重試</string>
     <string name="keys_error_generic">啟用失敗：%1$s</string>
 </resources>

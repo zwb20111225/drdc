@@ -512,6 +512,7 @@
     <string name="keys_error_rate">Too many requests, try again later</string>
     <string name="keys_error_signature">Client verification failed, please update the app</string>
     <string name="keys_error_network">Network error, check your connection</string>
+    <string name="keys_error_network_detail">Network error: %1$s</string>
     <string name="keys_error_offline_expired">Offline for too long, connect and try again</string>
     <string name="keys_error_generic">Activation failed: %1$s</string>
     <string name="calculator_label">Calculator</string>

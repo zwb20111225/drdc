@@ -505,6 +505,7 @@
     <string name="keys_error_rate">请求过于频繁，请稍后再试</string>
     <string name="keys_error_signature">客户端校验失败，请更新应用</string>
     <string name="keys_error_network">网络错误，请检查连接</string>
+    <string name="keys_error_network_detail">网络错误：%1$s</string>
     <string name="keys_error_offline_expired">离线时间过长，请联网后重试</string>
     <string name="keys_error_generic">激活失败：%1$s</string>
     <string name="calculator_label">计算器</string>

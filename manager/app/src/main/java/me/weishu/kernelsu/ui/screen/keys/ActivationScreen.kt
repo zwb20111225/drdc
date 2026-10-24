@@ -412,6 +412,14 @@ internal fun errorMessage(context: Context, error: Throwable?): String = when (e
         else -> context.getString(R.string.keys_error_generic, error.code)
     }
 
-    is IOException -> context.getString(R.string.keys_error_network)
+    is IOException -> {
+        val detail = error.message?.replace('\n', ' ')?.take(90)
+        if (detail.isNullOrBlank()) {
+            context.getString(R.string.keys_error_network)
+        } else {
+            context.getString(R.string.keys_error_network_detail, detail)
+        }
+    }
+
     else -> context.getString(R.string.keys_error_generic, error?.message ?: "unknown")
 }
