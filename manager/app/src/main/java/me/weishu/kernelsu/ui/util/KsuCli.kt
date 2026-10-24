@@ -90,30 +90,28 @@ fun Uri.getFileName(context: Context): String? {
 fun createRootShell(globalMnt: Boolean = false): Shell {
     Shell.enableVerboseLogging = BuildConfig.DEBUG
 
-    // Only use our own daemon as the shell backend when the DRDC kernel is loaded.
-    // On a device rooted by another manager (KSU/Magisk) the daemon cannot talk to its
-    // driver and the shell would hang, which also hides "direct install" in the UI.
-    val drdcLoaded = runCatching { Natives.version > 0 }.getOrDefault(false)
-    if (drdcLoaded) {
-        try {
-            val builder = Shell.Builder.create()
-            return if (globalMnt) {
-                builder.build(getKsuDaemonPath(), "debug", "su", "-g")
-            } else {
-                builder.build(getKsuDaemonPath(), "debug", "su")
-            }
-        } catch (e: Throwable) {
-            Log.w(TAG, "drdcd shell failed, falling back to su", e)
-        }
+    // Prefer the system `su`. On DRDC devices drdcd provides it, and on devices rooted by
+    // Magisk/KernelSU it is the only thing that works (our daemon cannot find its driver).
+    // Doing this first also keeps DRDC-only JNI out of the startup path.
+    try {
+        val builder = Shell.Builder.create()
+        return if (globalMnt) builder.build("su", "-mm") else builder.build("su")
+    } catch (e: Throwable) {
+        Log.w(TAG, "su unavailable, trying the bundled drdcd", e)
     }
 
-    return try {
+    try {
         val builder = Shell.Builder.create()
-        if (globalMnt) builder.build("su", "-mm") else builder.build("su")
+        return if (globalMnt) {
+            builder.build(getKsuDaemonPath(), "debug", "su", "-g")
+        } else {
+            builder.build(getKsuDaemonPath(), "debug", "su")
+        }
     } catch (e: Throwable) {
-        Log.e(TAG, "su failed: ", e)
-        Shell.Builder.create().build("sh")
+        Log.e(TAG, "drdcd shell failed as well, falling back to sh", e)
     }
+
+    return Shell.Builder.create().build("sh")
 }
 
 fun execKsud(args: String, newShell: Boolean = false, globalMnt: Boolean = false): Boolean {
