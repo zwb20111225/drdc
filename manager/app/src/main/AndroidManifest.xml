@@ -134,6 +134,11 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <service
+            android:name=".ui.screen.files.FileTaskService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <receiver
             android:name=".magica.BootCompletedReceiver"
             android:directBootAware="true"
