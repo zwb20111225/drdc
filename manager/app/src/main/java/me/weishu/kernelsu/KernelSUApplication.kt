@@ -61,10 +61,9 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
         // Keep the hidden real launcher entry in sync with the persisted setting.
         SettingsRepositoryImpl().syncLauncherIconState()
 
-        val superUserViewModel = ViewModelProvider(this)[SuperUserViewModel::class.java]
-        // Preload only; never let a JNI/profile hiccup take the whole process down at startup.
-        runCatching { superUserViewModel.loadAppList() }
-            .onFailure { Log.w("DRDC", "preload app list failed", it) }
+        // The superuser list is loaded when its page opens; preloading it here meant hundreds
+        // of JNI profile lookups during startup, which is both slow and risky on kernels that
+        // are not DRDC (it is the first thing that runs once root is granted).
 
         val webroot = File(dataDir, "webroot")
         if (!webroot.exists()) {
