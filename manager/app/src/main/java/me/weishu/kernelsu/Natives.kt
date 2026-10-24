@@ -32,7 +32,7 @@ object Natives {
     const val ROOT_GID = 0
 
     init {
-        System.loadLibrary("kernelsu")
+        System.loadLibrary("drdc")
     }
 
     val version: Int
@@ -156,7 +156,7 @@ object Natives {
 
         val nonRootUseDefault: Boolean = true,
         val umountModules: Boolean = true,
-        var rules: String = "", // this field is save in ksud!!
+        var rules: String = "", // this field is save in drdcd!!
 
         val flags: Long = FLAG_KSU_NO_NEW_PRIVS,
     ) : Parcelable {

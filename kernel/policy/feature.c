@@ -7,7 +7,7 @@
 #include <linux/mutex.h>
 #include <linux/string.h>
 
-static const struct ksu_feature_handler *feature_handlers[KSU_FEATURE_MAX];
+static const struct drdc_feature_handler *feature_handlers[KSU_FEATURE_MAX];
 
 static DEFINE_MUTEX(feature_mutex);
 
@@ -21,7 +21,7 @@ static const char *const feature_names[KSU_FEATURE_MAX] = {
 };
 
 // Features forced by boot config. Written only while parsing module params
-// (before kernelsu_init), read-only afterwards.
+// (before drdc_init), read-only afterwards.
 static u64 forced_values[KSU_FEATURE_MAX];
 static DECLARE_BITMAP(forced_mask, KSU_FEATURE_MAX);
 // Forced features whose value has not been applied successfully yet
@@ -47,7 +47,7 @@ static int parse_feature_id(const char *name, u32 *id)
 
 // force_feature=<name|id>:<value>[,<name|id>:<value>...]
 // May be specified multiple times. Invalid entries are skipped instead of
-// failing, as a param error would prevent KernelSU from loading at all.
+// failing, as a param error would prevent DRDC from loading at all.
 // This may run before the slab allocator is up (built-in), so don't allocate.
 static int force_feature_param_set(const char *val, const struct kernel_param *kp)
 {
@@ -101,7 +101,7 @@ static const struct kernel_param_ops force_feature_param_ops = {
 };
 module_param_cb(force_feature, &force_feature_param_ops, NULL, 0);
 
-int __init ksu_register_feature_handler(const struct ksu_feature_handler *handler)
+int __init drdc_register_feature_handler(const struct drdc_feature_handler *handler)
 {
     if (!handler) {
         pr_err("feature: register handler is NULL\n");
@@ -133,7 +133,7 @@ int __init ksu_register_feature_handler(const struct ksu_feature_handler *handle
     return 0;
 }
 
-int ksu_unregister_feature_handler(u32 feature_id)
+int drdc_unregister_feature_handler(u32 feature_id)
 {
     int ret = 0;
 
@@ -159,10 +159,10 @@ out:
     return ret;
 }
 
-int ksu_get_feature(u32 feature_id, u64 *value, bool *supported)
+int drdc_get_feature(u32 feature_id, u64 *value, bool *supported)
 {
     int ret = 0;
-    const struct ksu_feature_handler *handler;
+    const struct drdc_feature_handler *handler;
 
     if (feature_id >= KSU_FEATURE_MAX) {
         pr_err("feature: invalid feature_id %u\n", feature_id);
@@ -203,10 +203,10 @@ out:
     return ret;
 }
 
-int ksu_set_feature(u32 feature_id, u64 value)
+int drdc_set_feature(u32 feature_id, u64 value)
 {
     int ret = 0;
-    const struct ksu_feature_handler *handler;
+    const struct drdc_feature_handler *handler;
 
     if (feature_id >= KSU_FEATURE_MAX) {
         pr_err("feature: invalid feature_id %u\n", feature_id);
@@ -244,14 +244,14 @@ out:
     return ret;
 }
 
-bool ksu_feature_is_forced(u32 feature_id)
+bool drdc_feature_is_forced(u32 feature_id)
 {
     return feature_id < KSU_FEATURE_MAX && test_bit(feature_id, forced_mask);
 }
 
-void ksu_feature_apply_forced(void)
+void drdc_feature_apply_forced(void)
 {
-    const struct ksu_feature_handler *handler;
+    const struct drdc_feature_handler *handler;
     unsigned int id;
     int ret;
 
@@ -276,7 +276,7 @@ void ksu_feature_apply_forced(void)
     mutex_unlock(&feature_mutex);
 }
 
-void __init ksu_feature_init(void)
+void __init drdc_feature_init(void)
 {
     int i;
 
@@ -287,7 +287,7 @@ void __init ksu_feature_init(void)
     pr_info("feature: feature management initialized\n");
 }
 
-void __exit ksu_feature_exit(void)
+void __exit drdc_feature_exit(void)
 {
     int i;
 

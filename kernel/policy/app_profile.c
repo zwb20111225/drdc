@@ -147,7 +147,7 @@ int escape_with_root_profile(void)
         goto out_abort_creds;
     }
 
-    profile = ksu_get_root_profile(cred->uid.val);
+    profile = drdc_get_root_profile(cred->uid.val);
 
     cred->uid.val = profile->uid;
     cred->suid.val = profile->uid;
@@ -211,16 +211,16 @@ int escape_with_root_profile(void)
     }
 
     for_each_thread (p, t) {
-        ksu_set_task_tracepoint_flag(t);
+        drdc_set_task_tracepoint_flag(t);
     }
 
     setup_mount_ns(profile->namespaces);
-    ksu_put_root_profile(profile);
+    drdc_put_root_profile(profile);
     return 0;
 
 out_abort_creds:
     if (profile)
-        ksu_put_root_profile(profile);
+        drdc_put_root_profile(profile);
     abort_creds(cred);
     return ret;
 }
@@ -237,7 +237,7 @@ void escape_to_root_for_init(void)
     commit_creds(cred);
 }
 
-void __init ksu_app_profile_init(void)
+void __init drdc_app_profile_init(void)
 {
 #if NEED_BACKPORT_COMPAT
     unsigned long size = 0;

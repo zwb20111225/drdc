@@ -13,7 +13,7 @@
 #define KSU_EVENT_RECORD_FLAG_INTERNAL (1U << 0)
 #define KSU_EVENT_QUEUE_TYPE_DROPPED ((__u16)0xFFFF)
 
-struct ksu_event_record_hdr {
+struct drdc_event_record_hdr {
     __u16 type;
     __u16 flags;
     __u32 len;
@@ -21,13 +21,13 @@ struct ksu_event_record_hdr {
     __u64 ts_ns;
 };
 
-struct ksu_event_queue_dropped_info {
+struct drdc_event_queue_dropped_info {
     __u64 dropped;
     __u64 first_seq;
     __u64 last_seq;
 };
 
-struct ksu_event_queue {
+struct drdc_event_queue {
     spinlock_t lock;
     /* The first implementation supports a single reader. */
     struct mutex read_lock;
@@ -47,17 +47,17 @@ struct ksu_event_queue {
     bool closed;
 };
 
-void ksu_event_queue_init(struct ksu_event_queue *queue, __u32 max_queued, __u32 max_payload_len);
-void ksu_event_queue_destroy(struct ksu_event_queue *queue);
+void drdc_event_queue_init(struct drdc_event_queue *queue, __u32 max_queued, __u32 max_payload_len);
+void drdc_event_queue_destroy(struct drdc_event_queue *queue);
 
-int ksu_event_queue_push(struct ksu_event_queue *queue, __u16 type, __u16 flags, const void *payload, __u32 len,
+int drdc_event_queue_push(struct drdc_event_queue *queue, __u16 type, __u16 flags, const void *payload, __u32 len,
                          gfp_t gfp);
-void ksu_event_queue_drop(struct ksu_event_queue *queue);
+void drdc_event_queue_drop(struct drdc_event_queue *queue);
 
-ssize_t ksu_event_queue_read(struct ksu_event_queue *queue, char __user *buf, size_t count, int file_flags);
-__poll_t ksu_event_queue_poll(struct ksu_event_queue *queue, struct file *file, poll_table *wait);
+ssize_t drdc_event_queue_read(struct drdc_event_queue *queue, char __user *buf, size_t count, int file_flags);
+__poll_t drdc_event_queue_poll(struct drdc_event_queue *queue, struct file *file, poll_table *wait);
 
-void ksu_event_queue_close(struct ksu_event_queue *queue);
-bool ksu_event_queue_has_data(struct ksu_event_queue *queue);
+void drdc_event_queue_close(struct drdc_event_queue *queue);
+bool drdc_event_queue_has_data(struct drdc_event_queue *queue);
 
 #endif // KSU_EVENT_QUEUE_H

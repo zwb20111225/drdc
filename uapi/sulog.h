@@ -9,13 +9,13 @@
 #define TASK_COMM_LEN 16
 #endif
 
-enum ksu_sulog_event_type {
+enum drdc_sulog_event_type {
     KSU_SULOG_EVENT_ROOT_EXECVE = 1,
     KSU_SULOG_EVENT_SUCOMPAT = 2,
     KSU_SULOG_EVENT_IOCTL_GRANT_ROOT = 3,
 };
 
-struct ksu_sulog_event {
+struct drdc_sulog_event {
     __u16 version;
     __u16 event_type;
     __s32 retval;

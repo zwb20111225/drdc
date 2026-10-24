@@ -18,15 +18,15 @@
 #include <linux/kref.h>
 
 #include "klog.h" // IWYU pragma: keep
-#include "ksu.h"
-#include "runtime/ksud_boot.h"
+#include "drdc.h"
+#include "runtime/drdcd_boot.h"
 #include "selinux/selinux.h"
 #include "policy/allowlist.h"
 #include "manager/manager_identity.h"
 #include "infra/su_mount_ns.h"
 #include "feature/shell_su_adb_only.h"
 
-#define FILE_MAGIC 0x7f4b5355 // ' KSU', u32
+#define FILE_MAGIC 0x7f445244 // ' KSU', u32
 #define FILE_FORMAT_VERSION 4 // u32
 
 #define KSU_APP_PROFILE_PRESERVE_UID 9999 // NOBODY_UID
@@ -69,15 +69,15 @@ struct perm_data {
 static DEFINE_HASHTABLE(allow_list, ALLOW_LIST_BITS);
 static u16 allow_list_count = 0;
 
-#define KERNEL_SU_ALLOWLIST "/data/adb/ksu/.allowlist"
+#define KERNEL_SU_ALLOWLIST "/data/adb/drdc/.allowlist"
 
-void ksu_persistent_allow_list(void);
+void drdc_persistent_allow_list(void);
 
-void ksu_show_allow_list(void)
+void drdc_show_allow_list(void)
 {
     int i;
     struct perm_data *p = NULL;
-    pr_info("ksu_show_allow_list\n");
+    pr_info("drdc_show_allow_list\n");
     rcu_read_lock();
     hash_for_each_rcu (allow_list, i, p, list) {
         pr_info("uid :%d, allow: %d\n", p->profile.curr_uid, p->profile.allow_su);
@@ -85,7 +85,7 @@ void ksu_show_allow_list(void)
     rcu_read_unlock();
 }
 
-struct app_profile *ksu_get_app_profile(uid_t uid)
+struct app_profile *drdc_get_app_profile(uid_t uid)
 {
     struct perm_data *p = NULL;
     bool found;
@@ -164,7 +164,7 @@ static void put_perm_data(struct perm_data *data)
     kref_put(&data->ref, release_perm_data);
 }
 
-int ksu_set_app_profile(struct app_profile *profile)
+int drdc_set_app_profile(struct app_profile *profile)
 {
     struct perm_data *p, *np;
     int result = 0;
@@ -195,7 +195,7 @@ int ksu_set_app_profile(struct app_profile *profile)
     hash_for_each_possible (allow_list, p, list, profile->curr_uid) {
         if (profile->curr_uid == p->profile.curr_uid) {
             if (strcmp(profile->key, p->profile.key) != 0) {
-                pr_warn("ksu_set_app_profile: key changed: uid=%d orig=%s new=%s\n", profile->curr_uid, p->profile.key,
+                pr_warn("drdc_set_app_profile: key changed: uid=%d orig=%s new=%s\n", profile->curr_uid, p->profile.key,
                         profile->key);
             }
             // found it, just override it all!
@@ -221,7 +221,7 @@ int ksu_set_app_profile(struct app_profile *profile)
     // not found, alloc a new node!
     np = (struct perm_data *)kzalloc(sizeof(struct perm_data), GFP_KERNEL);
     if (!np) {
-        pr_err("ksu_set_app_profile alloc failed\n");
+        pr_err("drdc_set_app_profile alloc failed\n");
         result = -ENOMEM;
         goto out_unlock;
     }
@@ -252,7 +252,7 @@ out_unlock:
     return result;
 }
 
-bool __ksu_is_allow_uid(uid_t uid)
+bool __drdc_is_allow_uid(uid_t uid)
 {
     struct perm_data *p;
 
@@ -282,36 +282,36 @@ bool __ksu_is_allow_uid(uid_t uid)
     return false;
 }
 
-bool ksu_is_uid_granted_root(uid_t uid)
+bool drdc_is_uid_granted_root(uid_t uid)
 {
     if (unlikely(uid == 0)) {
         // already root, but only allow our domain.
-        return is_ksu_domain();
+        return is_drdc_domain();
     }
-    return __ksu_is_allow_uid(uid);
+    return __drdc_is_allow_uid(uid);
 }
 
-bool __ksu_is_allow_uid_for_current(uid_t uid)
+bool __drdc_is_allow_uid_for_current(uid_t uid)
 {
-    if (unlikely(uid == SHELL_UID) && !ksu_shell_su_allowed_for_current()) {
+    if (unlikely(uid == SHELL_UID) && !drdc_shell_su_allowed_for_current()) {
         return false;
     }
-    return ksu_is_uid_granted_root(uid);
+    return drdc_is_uid_granted_root(uid);
 }
 
-bool ksu_uid_should_umount(uid_t uid)
+bool drdc_uid_should_umount(uid_t uid)
 {
     struct app_profile *profile;
     bool res;
-    if (likely(ksu_is_manager_appid_valid()) && unlikely(ksu_get_manager_appid() == uid % PER_USER_RANGE)) {
+    if (likely(drdc_is_manager_appid_valid()) && unlikely(drdc_get_manager_appid() == uid % PER_USER_RANGE)) {
         // we should not umount on manager!
         return false;
     }
 #ifdef CONFIG_KSU_DISABLE_POLICY
-    return !__ksu_is_allow_uid(uid);
+    return !__drdc_is_allow_uid(uid);
 #else
     rcu_read_lock();
-    profile = ksu_get_app_profile(uid);
+    profile = drdc_get_app_profile(uid);
     if (!profile) {
         // no app profile found, it must be non root app
         res = default_non_root_profile.umount_modules;
@@ -329,18 +329,18 @@ bool ksu_uid_should_umount(uid_t uid)
     rcu_read_unlock();
 
     if (profile)
-        ksu_put_app_profile(profile);
+        drdc_put_app_profile(profile);
     return res;
 #endif
 }
 
-void ksu_put_app_profile(struct app_profile *profile)
+void drdc_put_app_profile(struct app_profile *profile)
 {
     struct perm_data *p = container_of(profile, struct perm_data, profile);
     put_perm_data(p);
 }
 
-struct root_profile *ksu_get_root_profile(uid_t uid)
+struct root_profile *drdc_get_root_profile(uid_t uid)
 {
 #ifdef CONFIG_KSU_DISABLE_POLICY
     (void)uid;
@@ -382,7 +382,7 @@ retry:
 #endif
 }
 
-void ksu_put_root_profile(struct root_profile *profile)
+void drdc_put_root_profile(struct root_profile *profile)
 {
     if (likely(profile == &default_root_profile))
         return;
@@ -390,7 +390,7 @@ void ksu_put_root_profile(struct root_profile *profile)
     put_perm_data(p);
 }
 
-bool ksu_get_allow_list(int *array, u16 length, u16 *out_length, u16 *out_total, bool allow)
+bool drdc_get_allow_list(int *array, u16 length, u16 *out_length, u16 *out_total, bool allow)
 {
     struct perm_data *p = NULL;
     u16 i = 0, j = 0;
@@ -425,7 +425,7 @@ static void do_persistent_allow_list(struct callback_head *_cb)
     loff_t off = 0;
     int i;
 
-    const struct cred *saved = override_creds(ksu_cred);
+    const struct cred *saved = override_creds(drdc_cred);
     struct file *fp = filp_open(KERNEL_SU_ALLOWLIST, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (IS_ERR(fp)) {
         pr_err("save_allow_list create file failed: %ld\n", PTR_ERR(fp));
@@ -459,7 +459,7 @@ out:
     kfree(_cb);
 }
 
-void ksu_persistent_allow_list()
+void drdc_persistent_allow_list()
 {
     struct task_struct *tsk;
 
@@ -512,7 +512,7 @@ static void migrate_profile(u32 version, struct app_profile *profile)
     profile->version = KSU_APP_PROFILE_VER;
 }
 
-void ksu_load_allow_list()
+void drdc_load_allow_list()
 {
 #ifdef CONFIG_KSU_DISABLE_POLICY
     pr_info("allowlist load skipped because policy is disabled\n");
@@ -569,26 +569,26 @@ void ksu_load_allow_list()
         migrate_profile(version, &profile);
 
         pr_info("load_allow_uid, name: %s, uid: %d, allow: %d\n", profile.key, profile.curr_uid, profile.allow_su);
-        ksu_set_app_profile(&profile);
+        drdc_set_app_profile(&profile);
     }
-    ksu_show_allow_list();
+    drdc_show_allow_list();
     filp_close(fp, 0);
     if (version < KSU_APP_PROFILE_VER)
-        ksu_persistent_allow_list();
+        drdc_persistent_allow_list();
     return;
 
 exit:
-    ksu_show_allow_list();
+    drdc_show_allow_list();
     filp_close(fp, 0);
 }
 
-void ksu_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *), void *data)
+void drdc_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *), void *data)
 {
     struct perm_data *np = NULL;
     struct hlist_node *tmp;
     int i;
 
-    if (!ksu_boot_completed) {
+    if (!drdc_boot_completed) {
         pr_info("boot not completed, skip prune\n");
         return;
     }
@@ -612,16 +612,16 @@ void ksu_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *), void *data
 
     if (modified) {
         smp_mb();
-        ksu_persistent_allow_list();
+        drdc_persistent_allow_list();
     }
 }
 
-void __init ksu_allowlist_init(void)
+void __init drdc_allowlist_init(void)
 {
     init_default_profiles();
 }
 
-void __exit ksu_allowlist_exit(void)
+void __exit drdc_allowlist_exit(void)
 {
     struct perm_data *np = NULL;
     struct hlist_node *tmp;

@@ -11,8 +11,8 @@
 #include "arch.h"
 #include "klog.h" // IWYU pragma: keep
 
-sys_call_ptr_t *ksu_syscall_table = NULL;
-int ksu_dispatcher_nr = -1;
+sys_call_ptr_t *drdc_syscall_table = NULL;
+int drdc_dispatcher_nr = -1;
 
 #ifndef __NR_syscalls
 #define __NR_syscalls (__NR_syscall_max + 1)
@@ -20,7 +20,7 @@ int ksu_dispatcher_nr = -1;
 
 // Hook registration table — read with READ_ONCE from tracepoint/dispatcher
 // context, written with WRITE_ONCE from init/exit context.
-static ksu_syscall_hook_fn syscall_hooks[__NR_syscalls];
+static drdc_syscall_hook_fn syscall_hooks[__NR_syscalls];
 
 // Track all hooked syscall entries for restoration.
 // Protected by hooked_entries_lock.
@@ -35,15 +35,15 @@ static int hooked_count = 0;
 
 static int patch_syscall_table(int nr, sys_call_ptr_t fn)
 {
-    if (ksu_syscall_table == NULL)
+    if (drdc_syscall_table == NULL)
         return -ENOENT;
     if (nr < 0 || nr >= __NR_syscalls)
         return -EINVAL;
 
-    pr_info("patch syscall %d, 0x%lx -> 0x%lx\n", nr, (unsigned long)READ_ONCE(ksu_syscall_table[nr]),
+    pr_info("patch syscall %d, 0x%lx -> 0x%lx\n", nr, (unsigned long)READ_ONCE(drdc_syscall_table[nr]),
             (unsigned long)fn);
 
-    if (ksu_patch_text(&ksu_syscall_table[nr], &fn, sizeof(fn), KSU_PATCH_TEXT_FLUSH_DCACHE)) {
+    if (drdc_patch_text(&drdc_syscall_table[nr], &fn, sizeof(fn), KSU_PATCH_TEXT_FLUSH_DCACHE)) {
         pr_err("patch syscall %d failed\n", nr);
         return -EIO;
     }
@@ -53,9 +53,9 @@ static int patch_syscall_table(int nr, sys_call_ptr_t fn)
 
 // Direct syscall table patching: overwrite syscall_table[nr] with fn,
 // save original to *old, and record for restoration at module exit.
-void ksu_syscall_table_hook(int nr, sys_call_ptr_t fn, sys_call_ptr_t *old)
+void drdc_syscall_table_hook(int nr, sys_call_ptr_t fn, sys_call_ptr_t *old)
 {
-    if (ksu_syscall_table == NULL)
+    if (drdc_syscall_table == NULL)
         return;
     if (nr < 0 || nr >= __NR_syscalls) {
         pr_info("invalid nr: %d\n", nr);
@@ -64,7 +64,7 @@ void ksu_syscall_table_hook(int nr, sys_call_ptr_t fn, sys_call_ptr_t *old)
 
     mutex_lock(&hooked_entries_lock);
 
-    sys_call_ptr_t orig = READ_ONCE(ksu_syscall_table[nr]);
+    sys_call_ptr_t orig = READ_ONCE(drdc_syscall_table[nr]);
     if (old)
         *old = orig;
 
@@ -93,11 +93,11 @@ void ksu_syscall_table_hook(int nr, sys_call_ptr_t fn, sys_call_ptr_t *old)
 }
 
 // Restore syscall_table[nr] to its original value and remove from tracking list.
-void ksu_syscall_table_unhook(int nr)
+void drdc_syscall_table_unhook(int nr)
 {
     int i;
 
-    if (ksu_syscall_table == NULL)
+    if (drdc_syscall_table == NULL)
         return;
     if (nr < 0 || nr >= __NR_syscalls)
         return;
@@ -119,15 +119,15 @@ void ksu_syscall_table_unhook(int nr)
     pr_warn("syscall %d not found in hooked entries\n", nr);
 }
 
-static int ksu_find_ni_syscall_slots(int *out_slots, int max_slots)
+static int drdc_find_ni_syscall_slots(int *out_slots, int max_slots)
 {
     unsigned long ni_syscall;
     int i, count = 0;
 
-    if (!ksu_syscall_table || max_slots <= 0)
+    if (!drdc_syscall_table || max_slots <= 0)
         return 0;
 
-    ni_syscall = (unsigned long)ksu_resolve_symbol_for_functable_hook("__x64_sys_ni_syscall");
+    ni_syscall = (unsigned long)drdc_resolve_symbol_for_functable_hook("__x64_sys_ni_syscall");
 
     pr_info("sys_ni_syscall: 0x%lx\n", ni_syscall);
 
@@ -135,7 +135,7 @@ static int ksu_find_ni_syscall_slots(int *out_slots, int max_slots)
         return 0;
 
     for (i = 0; i < __NR_syscalls && count < max_slots; i++) {
-        if ((unsigned long)ksu_syscall_table[i] == ni_syscall) {
+        if ((unsigned long)drdc_syscall_table[i] == ni_syscall) {
             out_slots[count++] = i;
             pr_info("ni_syscall %d: %d\n", count, i);
         }
@@ -147,9 +147,9 @@ static int ksu_find_ni_syscall_slots(int *out_slots, int max_slots)
 // Unified dispatcher: reads original NR from orig_ax, dispatches to handler.
 // Validates that orig_ax matches our dispatcher slot (i.e. we redirected it),
 // otherwise it's a spurious call — return -ENOSYS.
-static long __nocfi ksu_syscall_dispatcher(const struct pt_regs *regs)
+static long __nocfi drdc_syscall_dispatcher(const struct pt_regs *regs)
 {
-    if (regs->orig_ax != ksu_dispatcher_nr)
+    if (regs->orig_ax != drdc_dispatcher_nr)
         return -ENOSYS;
 
     // On x86_64, orig_ax was overwritten by our tracepoint to route here.
@@ -163,7 +163,7 @@ static long __nocfi ksu_syscall_dispatcher(const struct pt_regs *regs)
     ((struct pt_regs *)regs)->orig_ax = orig_nr;
 
     if (likely(orig_nr >= 0 && orig_nr < __NR_syscalls)) {
-        ksu_syscall_hook_fn fn = READ_ONCE(syscall_hooks[orig_nr]);
+        drdc_syscall_hook_fn fn = READ_ONCE(syscall_hooks[orig_nr]);
         if (likely(fn))
             return fn(orig_nr, regs);
     }
@@ -173,7 +173,7 @@ static long __nocfi ksu_syscall_dispatcher(const struct pt_regs *regs)
 
 // Register a handler into the dispatcher's routing table.
 // Does not modify the syscall table — the dispatcher slot is shared by all hooks.
-int ksu_register_syscall_hook(int nr, ksu_syscall_hook_fn fn)
+int drdc_register_syscall_hook(int nr, drdc_syscall_hook_fn fn)
 {
     if (nr < 0 || nr >= __NR_syscalls)
         return -EINVAL;
@@ -188,7 +188,7 @@ int ksu_register_syscall_hook(int nr, ksu_syscall_hook_fn fn)
 
 // Remove a handler from the dispatcher's routing table.
 // The syscall table is not touched — only the dispatcher stops routing this nr.
-void ksu_unregister_syscall_hook(int nr)
+void drdc_unregister_syscall_hook(int nr)
 {
     if (nr < 0 || nr >= __NR_syscalls)
         return;
@@ -196,7 +196,7 @@ void ksu_unregister_syscall_hook(int nr)
     pr_info("unregistered syscall hook for nr=%d\n", nr);
 }
 
-bool ksu_has_syscall_hook(int nr)
+bool drdc_has_syscall_hook(int nr)
 {
     if (nr < 0 || nr >= __NR_syscalls)
         return false;
@@ -212,7 +212,7 @@ static char x64_sys_call_patch_orig_insn[14];
 
 static long my_x64_sys_call(const struct pt_regs *regs, unsigned int nr)
 {
-    return ksu_syscall_table[nr](regs);
+    return drdc_syscall_table[nr](regs);
 }
 
 // avd 13-5.15 missing this commit:
@@ -235,7 +235,7 @@ static __always_inline bool my_do_syscall_x64(struct pt_regs *regs, int nr)
 
     if (likely(unr < NR_syscalls)) {
         unr = array_index_nospec(unr, NR_syscalls);
-        regs->ax = ksu_syscall_table[unr](regs);
+        regs->ax = drdc_syscall_table[unr](regs);
         return true;
     }
     return false;
@@ -284,7 +284,7 @@ static void patch_abs_jump(const char *sym, void **patch_addr, void *target, cha
         // clang-format on
         *((void **)(buf + 6)) = target;
         memcpy(backup, *patch_addr, sizeof(buf));
-        int ret = ksu_patch_text(*patch_addr, buf, sizeof(buf), KSU_PATCH_TEXT_FLUSH_ICACHE);
+        int ret = drdc_patch_text(*patch_addr, buf, sizeof(buf), KSU_PATCH_TEXT_FLUSH_ICACHE);
         if (ret) {
             pr_err("patch %s err: %d\n", sym, ret);
             *patch_addr = NULL;
@@ -292,16 +292,16 @@ static void patch_abs_jump(const char *sym, void **patch_addr, void *target, cha
     }
 }
 
-void __init __nocfi ksu_syscall_hook_init(void)
+void __init __nocfi drdc_syscall_hook_init(void)
 {
     int ni_slot;
 
     memset(syscall_hooks, 0, sizeof(syscall_hooks));
 
-    ksu_syscall_table = (sys_call_ptr_t *)ksu_resolve_symbol_for_functable_hook("sys_call_table");
-    pr_info("sys_call_table=0x%lx\n", (unsigned long)ksu_syscall_table);
+    drdc_syscall_table = (sys_call_ptr_t *)drdc_resolve_symbol_for_functable_hook("sys_call_table");
+    pr_info("sys_call_table=0x%lx\n", (unsigned long)drdc_syscall_table);
 
-    if (!ksu_syscall_table)
+    if (!drdc_syscall_table)
         return;
 
 #ifdef CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER
@@ -318,24 +318,24 @@ void __init __nocfi ksu_syscall_hook_init(void)
 #endif
 
     // Find one ni_syscall slot for the dispatcher
-    if (ksu_find_ni_syscall_slots(&ni_slot, 1) < 1) {
+    if (drdc_find_ni_syscall_slots(&ni_slot, 1) < 1) {
         pr_err("failed to find ni_syscall slot for dispatcher\n");
         return;
     }
 
-    ksu_dispatcher_nr = ni_slot;
-    ksu_syscall_table_hook(ksu_dispatcher_nr, (sys_call_ptr_t)ksu_syscall_dispatcher, NULL);
-    pr_info("dispatcher installed at slot %d\n", ksu_dispatcher_nr);
+    drdc_dispatcher_nr = ni_slot;
+    drdc_syscall_table_hook(drdc_dispatcher_nr, (sys_call_ptr_t)drdc_syscall_dispatcher, NULL);
+    pr_info("dispatcher installed at slot %d\n", drdc_dispatcher_nr);
 }
 
-void __exit ksu_syscall_hook_exit(void)
+void __exit drdc_syscall_hook_exit(void)
 {
     int i;
 
 #ifdef CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER
     int ret;
     if (x64_sys_call_patch_addr) {
-        ret = ksu_patch_text((void *)x64_sys_call_patch_addr, x64_sys_call_patch_orig_insn,
+        ret = drdc_patch_text((void *)x64_sys_call_patch_addr, x64_sys_call_patch_orig_insn,
                              sizeof(x64_sys_call_patch_orig_insn), KSU_PATCH_TEXT_FLUSH_ICACHE);
         if (ret) {
             pr_err("restore x64_sys_call err: %d\n", ret);
@@ -344,7 +344,7 @@ void __exit ksu_syscall_hook_exit(void)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
     if (do_syscall_64_patch_addr) {
-        ret = ksu_patch_text((void *)do_syscall_64_patch_addr, do_syscall_64_orig_insn, sizeof(do_syscall_64_orig_insn),
+        ret = drdc_patch_text((void *)do_syscall_64_patch_addr, do_syscall_64_orig_insn, sizeof(do_syscall_64_orig_insn),
                              KSU_PATCH_TEXT_FLUSH_ICACHE);
         if (ret) {
             pr_err("restore x64_sys_call err: %d\n", ret);
@@ -353,7 +353,7 @@ void __exit ksu_syscall_hook_exit(void)
 #endif
 #endif
 
-    if (!ksu_syscall_table)
+    if (!drdc_syscall_table)
         goto clear_state;
 
     // First, restore all patched syscall table entries while the dispatcher
@@ -364,7 +364,7 @@ void __exit ksu_syscall_hook_exit(void)
         sys_call_ptr_t orig = hooked_entries[i].orig;
 
         pr_info("restore syscall %d to 0x%lx\n", nr, (unsigned long)orig);
-        if (ksu_patch_text(&ksu_syscall_table[nr], &orig, sizeof(orig), KSU_PATCH_TEXT_FLUSH_DCACHE)) {
+        if (drdc_patch_text(&drdc_syscall_table[nr], &orig, sizeof(orig), KSU_PATCH_TEXT_FLUSH_DCACHE)) {
             pr_err("restore syscall %d failed\n", nr);
         }
     }
@@ -374,10 +374,10 @@ void __exit ksu_syscall_hook_exit(void)
 clear_state:
     // Now that the syscall table is restored, clear internal state.
     // At this point the tracepoint is already unregistered and synchronized
-    // (done by ksu_syscall_hook_manager_exit before calling us), so no new
+    // (done by drdc_syscall_hook_manager_exit before calling us), so no new
     // dispatches will occur.
     memset(syscall_hooks, 0, sizeof(syscall_hooks));
-    ksu_dispatcher_nr = -1;
+    drdc_dispatcher_nr = -1;
 
     pr_info("all syscall hooks restored\n");
 }

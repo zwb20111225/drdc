@@ -1,0 +1,208 @@
+# 冬日渡川 · 内核模块（drdc.ko）构建矩阵
+#
+# 基于 tiann/KernelSU 官方 .github/workflows/ddk-lkm.yml 改写
+# 官方用 DDK（Google Driver Development Kit）容器编 LKM，容器里已经带好各 KMI 的内核源码树，
+# 所以本地不需要下 8 份 GKI 源码，也不需要 Linux 机器。
+#
+# ============================================================================
+# ⚠️ 关键约束：内核模块在【编译期】就绑定管理器包名与签名证书
+#
+#   KSU_PACKAGE_NAME  -> com.drdc.winter
+#   KSU_EXPECTED_SIZE -> 签名证书字节数（十六进制，例如 0x033b）
+#   KSU_EXPECTED_HASH -> 签名证书的 SHA-256（64 位十六进制）
+#
+# 这三个值编译进 drdc.ko，运行时由 kernel/manager/apk_sign.c 校验。
+# 含义：只有用你自己的 keystore 签名的 com.drdc.winter 才能拿到 root。
+#
+# 因此【必须先建好发布用 keystore，再来编 .ko】：
+#   keystore 丢失 => 已分发的所有 .ko 全部作废，用户无法再升级
+#   签名证书变更 => 必须重新编译全部 8 个 KMI 的 .ko
+# ============================================================================
+#
+# 设计取舍：构建系统的变量名保持 KSU_*（它们不会进二进制，改名的收益为零且会牵连一堆脚本），
+#          只改【运行时会出现在二进制里的标识】：路径、符号名、字符串、模块文件名。
+
+name: Build drdc.ko
+
+on:
+  workflow_dispatch:
+    inputs:
+      ddk_release:
+        description: 'DDK 容器版本'
+        required: false
+        default: '20260828'
+        type: string
+      expected_size:
+        description: '签名证书字节数（十六进制，如 0x033b），留空则读 secret'
+        required: false
+        type: string
+      expected_hash:
+        description: '签名证书 SHA-256，留空则读 secret'
+        required: false
+        type: string
+  push:
+    paths:
+      - 'kernel/**'
+      - 'uapi/**'
+      - '.github/workflows/build-drdc-lkm.yml'
+
+env:
+  # 改这里就能换包名，但要记得 App 和 .ko 必须同时换
+  PACKAGE_NAME: com.drdc.winter
+
+jobs:
+  build-aarch64:
+    name: drdc.ko · ${{ matrix.kmi }} · aarch64
+    runs-on: ubuntu-latest
+    container:
+      # 与官方同源镜像，保证编出来的模块和官方 LKM 行为一致
+      image: ghcr.io/ylarod/ddk-min:${{ matrix.kmi }}-${{ inputs.ddk_release || '20260828' }}
+      options: --privileged
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi:
+          - android12-5.10
+          - android13-5.10
+          - android13-5.15
+          - android14-5.15
+          - android14-6.1
+          - android15-6.6
+          - android16-6.12
+          - android17-6.18
+    steps:
+      - name: 拉取源码
+        uses: actions/checkout@v7
+
+      - name: 校验源码树（drdc 改名已固化在代码里）
+        run: |
+          set -e
+          git config --global --add safe.directory "$PWD"
+          test -f kernel/runtime/drdcd.h
+          test -f uapi/drdc.h
+          test -f userspace/drdcd/Cargo.toml
+          grep -q 'obj-$(CONFIG_KSU) += drdc.o' kernel/Kbuild
+          echo "源码树已就绪：drdcd / drdcinit / drdc.ko 命名一致"
+
+      - name: 构建 drdc.ko
+        env:
+          # 冬日渡川固定签名证书（公开信息：证书本身就会编进每个 .ko 里）
+          # 如需换证书：改这两个默认值 + 重新编译全部 8 个 KMI
+          EXPECTED_SIZE: ${{ inputs.expected_size || secrets.DRDC_SIG_SIZE || '0x0330' }}
+          EXPECTED_HASH: ${{ inputs.expected_hash || secrets.DRDC_SIG_HASH || 'a339bd48cd5706135778273537704eddd4386e0c9fe50f70a81696c14dc859fe' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPECTED_SIZE:-}" ] || [ -z "${EXPECTED_HASH:-}" ]; then
+            echo "::error::缺少签名参数。请在仓库 Secret 里配置 DRDC_SIG_SIZE 与 DRDC_SIG_HASH，"
+            echo "::error::或在手动触发时填 expected_size / expected_hash。"
+            echo "::error::取值方法：解包已签名 APK 里的 META-INF/*.RSA，取证书 DER 长度与 SHA-256。"
+            exit 1
+          fi
+
+          cd kernel
+          echo "=== KMI: ${{ matrix.kmi }} | 包名: $PACKAGE_NAME ==="
+          CONFIG_KSU=m CC=clang make \
+            KSU_PACKAGE_NAME="$PACKAGE_NAME" \
+            KSU_EXPECTED_SIZE="$EXPECTED_SIZE" \
+            KSU_EXPECTED_HASH="$EXPECTED_HASH"
+
+          OUT="/github/workspace/out/aarch64"
+          mkdir -p "$OUT"
+          cp drdc.ko "$OUT/${{ matrix.kmi }}_drdc.ko"
+          llvm-strip -d "$OUT/${{ matrix.kmi }}_drdc.ko"
+          ls -la "$OUT/${{ matrix.kmi }}_drdc.ko"
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: aarch64-${{ matrix.kmi }}-drdc
+          path: /github/workspace/out/aarch64/${{ matrix.kmi }}_drdc.ko
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # x86_64（模拟器 / WSA / 平板）—— 第一版不启用，需要时打开这两个开关：
+  #   1. 把下面的 if: false 删掉
+  #   2. 确认 scripts/rename-to-drdc.sh 覆盖了 x86_64 分支的代
+  # 官方做法是在同一容器里重建一份 x86 的 KDIR，步骤较多，故单独一个 job。
+  # ---------------------------------------------------------------------------
+  build-x86_64:
+    name: drdc.ko · ${{ matrix.kmi }} · x86_64
+    if: false
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ylarod/ddk-min:${{ matrix.kmi }}-${{ inputs.ddk_release || '20260828' }}
+      options: --privileged
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi:
+          - android12-5.10
+          - android13-5.10
+          - android13-5.15
+          - android14-5.15
+          - android14-6.1
+          - android15-6.6
+          - android16-6.12
+          - android17-6.18
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 校验源码树（drdc 改名已固化在代码里）
+        run: |
+          set -e
+          git config --global --add safe.directory "$PWD"
+          test -f kernel/runtime/drdcd.h
+          test -f uapi/drdc.h
+
+      - name: 构建 x86_64 drdc.ko
+        env:
+          # 冬日渡川固定签名证书（公开信息：证书本身就会编进每个 .ko 里）
+          # 如需换证书：改这两个默认值 + 重新编译全部 8 个 KMI
+          EXPECTED_SIZE: ${{ inputs.expected_size || secrets.DRDC_SIG_SIZE || '0x0330' }}
+          EXPECTED_HASH: ${{ inputs.expected_hash || secrets.DRDC_SIG_HASH || 'a339bd48cd5706135778273537704eddd4386e0c9fe50f70a81696c14dc859fe' }}
+        run: |
+          set -euo pipefail
+          cd kernel
+          make clean
+
+          kmi="${{ matrix.kmi }}"
+          mkdir -p /opt/ddk/kdir-x64
+          unset ARCH; unset CROSS_COMPILE
+          export ARCH=x86_64
+          pushd "/opt/ddk/src/$kmi"
+            export KDIR="/opt/ddk/kdir-x64/$kmi"
+            MODPOST=scripts/mod/modpost.c
+            sed -i -E 's/^([[:space:]]*)check_exports\(mod\);/\1\/\/ check_exports(mod);/' "$MODPOST"
+            sed -i -E 's/^([[:space:]]*)s->module = exp->module;/\1\/\/ s->module = exp->module;/' "$MODPOST"
+            sed -i 's/^static void check_exports(/static void __attribute__((unused)) check_exports(/' "$MODPOST"
+            sed -i 's/__version_ext_names\\") =\\n/__version_ext_names\\") = \\"\\"\\n/' "$MODPOST"
+            make O=$KDIR gki_defconfig
+            scripts/config --file $KDIR/.config -d LTO_CLANG -e LTO_NONE -d LTO_CLANG_THIN -d LTO_CLANG_FULL -d THINLTO
+            if [ "$kmi" = "android16-6.12" ] || [ "$kmi" = "android17-6.18" ]; then
+              scripts/config --file $KDIR/.config -e CONFIG_CFI_ICALL_NORMALIZE_INTEGERS
+            fi
+            make O=$KDIR modules_prepare
+            make O=$KDIR security/selinux/built-in.a
+          popd
+
+          MDIR="$(realpath .)"
+          if [ "$kmi" = "android17-6.18" ]; then
+            make -C "$KDIR" M="$MDIR" MO="$MDIR" compile_commands.json modules \
+              CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y \
+              KSU_PACKAGE_NAME="$PACKAGE_NAME" KSU_EXPECTED_SIZE="$EXPECTED_SIZE" KSU_EXPECTED_HASH="$EXPECTED_HASH"
+          else
+            make -C "$KDIR" M="$MDIR" src="$MDIR" compile_commands.json modules \
+              CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y \
+              KSU_PACKAGE_NAME="$PACKAGE_NAME" KSU_EXPECTED_SIZE="$EXPECTED_SIZE" KSU_EXPECTED_HASH="$EXPECTED_HASH"
+          fi
+
+          OUT="/github/workspace/out/x86_64"
+          mkdir -p "$OUT"
+          cp drdc.ko "$OUT/${kmi}_drdc.ko"
+          llvm-strip -d "$OUT/${kmi}_drdc.ko"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: x86_64-${{ matrix.kmi }}-drdc
+          path: /github/workspace/out/x86_64/${{ matrix.kmi }}_drdc.ko
+          if-no-files-found: error

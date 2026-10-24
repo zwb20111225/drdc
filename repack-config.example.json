@@ -8,12 +8,12 @@
     },
     // APK build type to use, e.g. debug or release
     "app_build_type": "",
-    // ksud build type to use, e.g. debug or release
-    "ksud_build_type": "",
+    // drdcd build type to use, e.g. debug or release
+    "drdcd_build_type": "",
     // Native library architectures to keep in the APK
     "arch": [],
     // Base output APK filename (uses input APK stem if empty)
     "output_name": "",
-    // Whether to strip libksud.so
+    // Whether to strip libdrdcd.so
     "strip": false
 }

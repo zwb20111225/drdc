@@ -1,4 +1,4 @@
-#include "ksu.h"
+#include "drdc.h"
 #include "linux/cred.h"
 #include "linux/namei.h"
 #include "util.h"
@@ -18,7 +18,7 @@
 
 static DEFINE_MUTEX(throne_tracker_mutex);
 
-uid_t ksu_manager_appid = KSU_INVALID_APPID;
+uid_t drdc_manager_appid = KSU_INVALID_APPID;
 
 #define DATA_PATH_LEN 384 // 384 is enough for /data/app/<package>/base.apk
 
@@ -40,7 +40,7 @@ static void crown_manager(const char *apk, struct list_head *uid_data)
     list_for_each_entry (np, list, list) {
         if (strncmp(np->package, KSU_PACKAGE_NAME, KSU_MAX_PACKAGE_NAME) == 0) {
             pr_info("Crowning manager: uid=%d\n", np->uid);
-            ksu_set_manager_appid(np->uid);
+            drdc_set_manager_appid(np->uid);
             break;
         }
     }
@@ -163,7 +163,7 @@ static void search_manager(const char *path, int depth, struct list_head *uid_da
                                           .parent_dir = pos->dirpath,
                                           .private_data = candidate_path,
                                           .depth = pos->depth };
-            struct file *file = ksu_filp_open_nonotify(pos->dirpath, O_RDONLY | O_NOFOLLOW | O_NOATIME | O_DIRECTORY);
+            struct file *file = drdc_filp_open_nonotify(pos->dirpath, O_RDONLY | O_NOFOLLOW | O_NOATIME | O_DIRECTORY);
             if (IS_ERR(file)) {
                 pr_err("Failed to open directory: %s, err: %ld\n", pos->dirpath, PTR_ERR(file));
                 goto skip_iterate;
@@ -231,7 +231,7 @@ static bool is_uid_exist(uid_t uid, char *package, void *data)
 void track_throne(bool prune_only)
 {
     mutex_lock(&throne_tracker_mutex);
-    const struct cred *old_cred = override_creds(ksu_cred);
+    const struct cred *old_cred = override_creds(drdc_cred);
     struct file *fp = filp_open(SYSTEM_PACKAGES_LIST_PATH, O_RDONLY, 0);
     if (IS_ERR(fp)) {
         pr_err("%s: open " SYSTEM_PACKAGES_LIST_PATH " failed: %ld\n", __func__, PTR_ERR(fp));
@@ -307,19 +307,19 @@ void track_throne(bool prune_only)
 
     if (manager_package_uid == KSU_INVALID_APPID) {
         cached_manager_apk_path[0] = 0;
-        if (ksu_is_manager_appid_valid()) {
+        if (drdc_is_manager_appid_valid()) {
             pr_info("manager is uninstalled, invalidate it!\n");
-            ksu_invalidate_manager_uid();
+            drdc_invalidate_manager_uid();
             goto prune;
         }
     } else {
-        if (!ksu_is_manager_appid_valid()) {
+        if (!drdc_is_manager_appid_valid()) {
             need_rescan = true;
-        } else if (unlikely(np->uid != ksu_get_manager_appid())) {
+        } else if (unlikely(np->uid != drdc_get_manager_appid())) {
             // this should not happen in normal android system
             pr_info("manager uid changed, invalidate it!\n");
             cached_manager_apk_path[0] = 0;
-            ksu_invalidate_manager_uid();
+            drdc_invalidate_manager_uid();
             need_rescan = true;
         } else {
             // uid unchanged, skip
@@ -348,7 +348,7 @@ void track_throne(bool prune_only)
 
 prune:
     // then prune the allowlist
-    ksu_prune_allowlist(is_uid_exist, &uid_list);
+    drdc_prune_allowlist(is_uid_exist, &uid_list);
 out:
     // free uid_list
     list_for_each_entry_safe (np, n, &uid_list, list) {
@@ -360,12 +360,12 @@ out_revert_cred:
     mutex_unlock(&throne_tracker_mutex);
 }
 
-void __init ksu_throne_tracker_init()
+void __init drdc_throne_tracker_init()
 {
     // nothing to do
 }
 
-void __exit ksu_throne_tracker_exit()
+void __exit drdc_throne_tracker_exit()
 {
     // nothing to do
 }

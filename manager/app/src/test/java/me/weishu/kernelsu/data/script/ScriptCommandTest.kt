@@ -84,7 +84,7 @@ class ScriptCommandTest {
             "cd '$dir' && ASH_STANDALONE='1' KSU='true' KSU_VER='v3.0.0-1-gabc' KSU_VER_CODE='31234' " +
                 "KSU_KERNEL_VER_CODE='32500' KSU_MODULE='my_script' KSU_ONESHOT='1' MODPATH='$dir' " +
                 "KSU_PARAM_FLAG='false' KSU_PARAM_MODE='b' KSU_PARAM_NAME=''\\''; rm -rf / #' KSU_PARAM_COUNT='0' " +
-                "PATH=\"\$PATH\":'/data/adb/ksu/bin' '/data/adb/ksu/bin/busybox' sh ./action.sh </dev/null",
+                "PATH=\"\$PATH\":'/data/adb/drdc/bin' '/data/adb/drdc/bin/busybox' sh ./action.sh </dev/null",
             cmd,
         )
     }

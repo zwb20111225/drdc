@@ -75,7 +75,7 @@ class ScriptPackageTest {
 
     @Test
     fun parsesModuleProp() {
-        // Java properties, like ksud: later duplicates win, `:` / whitespace separators, BOM dropped.
+        // Java properties, like drdcd: later duplicates win, `:` / whitespace separators, BOM dropped.
         val props = ScriptPackage.parseModuleProp("\uFEFF# comment\r\nid = first\r\nname=Name = with eq\nid=a.b\nauthor: Bob\nversion v1\n")
         assertEquals("a.b", props["id"])
         assertEquals("Name = with eq", props["name"])
@@ -89,7 +89,7 @@ class ScriptPackageTest {
 
     @Test
     fun normalizesEntryNames() {
-        // Like ksud's zip crate and the registry validator: empty and "." segments are dropped.
+        // Like drdcd's zip crate and the registry validator: empty and "." segments are dropped.
         assertEquals("a/b", ScriptPackage.normalizeEntryName("a/b"))
         assertEquals("dir", ScriptPackage.normalizeEntryName("dir/"))
         assertEquals("action.sh", ScriptPackage.normalizeEntryName("./action.sh"))

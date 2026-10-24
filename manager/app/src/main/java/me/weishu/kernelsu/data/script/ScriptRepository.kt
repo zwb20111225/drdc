@@ -82,7 +82,7 @@ object ScriptRepository {
     }
 
     fun hostInfo(): ScriptHostInfo = ScriptHostInfo(
-        // Same value as ksud's VERSION_NAME (git describe without the leading "v").
+        // Same value as drdcd's VERSION_NAME (git describe without the leading "v").
         ksuVersion = BuildConfig.VERSION_NAME.removePrefix("v"),
         ksuVersionCode = BuildConfig.VERSION_CODE,
         kernelVersionCode = Natives.version,

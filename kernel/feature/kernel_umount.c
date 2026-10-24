@@ -15,26 +15,26 @@
 #include "policy/allowlist.h"
 #include "selinux/selinux.h"
 #include "policy/feature.h"
-#include "runtime/ksud_boot.h"
-#include "ksu.h"
+#include "runtime/drdcd_boot.h"
+#include "drdc.h"
 
-static bool ksu_kernel_umount_enabled = true;
+static bool drdc_kernel_umount_enabled = true;
 
 static int kernel_umount_feature_get(u64 *value)
 {
-    *value = ksu_kernel_umount_enabled ? 1 : 0;
+    *value = drdc_kernel_umount_enabled ? 1 : 0;
     return 0;
 }
 
 static int kernel_umount_feature_set(u64 value)
 {
     bool enable = value != 0;
-    ksu_kernel_umount_enabled = enable;
+    drdc_kernel_umount_enabled = enable;
     pr_info("kernel_umount: set to %d\n", enable);
     return 0;
 }
 
-static const struct ksu_feature_handler kernel_umount_handler = {
+static const struct drdc_feature_handler kernel_umount_handler = {
     .feature_id = KSU_FEATURE_KERNEL_UMOUNT,
     .name = "kernel_umount",
     .get_handler = kernel_umount_feature_get,
@@ -43,7 +43,7 @@ static const struct ksu_feature_handler kernel_umount_handler = {
 
 extern int path_umount(struct path *path, int flags);
 
-static void ksu_umount_mnt(const char *mnt, struct path *path, int flags)
+static void drdc_umount_mnt(const char *mnt, struct path *path, int flags)
 {
     int err = path_umount(path, flags);
     if (err) {
@@ -65,21 +65,21 @@ static void try_umount(const char *mnt, int flags)
         return;
     }
 
-    ksu_umount_mnt(mnt, &path, flags);
+    drdc_umount_mnt(mnt, &path, flags);
 }
 
 struct umount_tw {
     struct callback_head cb;
 };
 
-int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
+int drdc_handle_umount(uid_t old_uid, uid_t new_uid)
 {
     // if there isn't any module mounted, just ignore it!
-    if (!ksu_module_mounted) {
+    if (!drdc_module_mounted) {
         return 0;
     }
 
-    if (!ksu_kernel_umount_enabled) {
+    if (!drdc_kernel_umount_enabled) {
         return 0;
     }
 
@@ -94,7 +94,7 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
         return 0;
     }
 
-    if (!ksu_uid_should_umount(new_uid) && !is_isolated_process(new_uid)) {
+    if (!drdc_uid_should_umount(new_uid) && !is_isolated_process(new_uid)) {
         return 0;
     }
 
@@ -110,7 +110,7 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
     // umount the target mnt
     pr_info("handle umount for uid: %d, pid: %d\n", new_uid, current->pid);
 
-    const struct cred *saved = override_creds(ksu_cred);
+    const struct cred *saved = override_creds(drdc_cred);
 
     struct mount_entry *entry;
     down_read(&mount_list_lock);
@@ -125,14 +125,14 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
     return 0;
 }
 
-void __init ksu_kernel_umount_init(void)
+void __init drdc_kernel_umount_init(void)
 {
-    if (ksu_register_feature_handler(&kernel_umount_handler)) {
+    if (drdc_register_feature_handler(&kernel_umount_handler)) {
         pr_err("Failed to register kernel_umount feature handler\n");
     }
 }
 
-void __exit ksu_kernel_umount_exit(void)
+void __exit drdc_kernel_umount_exit(void)
 {
-    ksu_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
+    drdc_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
 }

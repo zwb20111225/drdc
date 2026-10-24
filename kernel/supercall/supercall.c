@@ -19,37 +19,37 @@
 
 #define KSU_DRIVER_PERMISSION_SU_SESSION (1UL << 0)
 
-struct ksu_driver_context {
+struct drdc_driver_context {
     unsigned long permissions;
 };
 
-struct ksu_install_fd_tw {
+struct drdc_install_fd_tw {
     struct callback_head cb;
     int __user *outp;
 };
 
-static int anon_ksu_release(struct inode *inode, struct file *filp)
+static int anon_drdc_release(struct inode *inode, struct file *filp)
 {
     kfree(filp->private_data);
-    pr_info("ksu fd released\n");
+    pr_info("drdc fd released\n");
     return 0;
 }
 
-static long anon_ksu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long anon_drdc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-    return ksu_supercall_handle_ioctl(filp, cmd, (void __user *)arg);
+    return drdc_supercall_handle_ioctl(filp, cmd, (void __user *)arg);
 }
 
-static const struct file_operations anon_ksu_fops = {
+static const struct file_operations anon_drdc_fops = {
     .owner = THIS_MODULE,
-    .unlocked_ioctl = anon_ksu_ioctl,
-    .compat_ioctl = anon_ksu_ioctl,
-    .release = anon_ksu_release,
+    .unlocked_ioctl = anon_drdc_ioctl,
+    .compat_ioctl = anon_drdc_ioctl,
+    .release = anon_drdc_release,
 };
 
-static int ksu_install_fd_with_permissions(unsigned int fd_flags, unsigned long permissions)
+static int drdc_install_fd_with_permissions(unsigned int fd_flags, unsigned long permissions)
 {
-    struct ksu_driver_context *context;
+    struct drdc_driver_context *context;
     struct file *filp;
     const char *name;
     int fd;
@@ -59,55 +59,55 @@ static int ksu_install_fd_with_permissions(unsigned int fd_flags, unsigned long 
         return -ENOMEM;
 
     context->permissions = permissions;
-    name = permissions & KSU_DRIVER_PERMISSION_SU_SESSION ? "[ksu_driver_su]" : "[ksu_driver]";
+    name = permissions & KSU_DRIVER_PERMISSION_SU_SESSION ? "[drdc_driver_su]" : "[drdc_driver]";
 
     fd = get_unused_fd_flags(fd_flags);
     if (fd < 0) {
-        pr_err("ksu_install_fd: failed to get unused fd\n");
+        pr_err("drdc_install_fd: failed to get unused fd\n");
         kfree(context);
         return fd;
     }
 
-    filp = anon_inode_getfile(name, &anon_ksu_fops, context, O_RDWR);
+    filp = anon_inode_getfile(name, &anon_drdc_fops, context, O_RDWR);
     if (IS_ERR(filp)) {
-        pr_err("ksu_install_fd: failed to create anon inode file\n");
+        pr_err("drdc_install_fd: failed to create anon inode file\n");
         put_unused_fd(fd);
         kfree(context);
         return PTR_ERR(filp);
     }
 
     fd_install(fd, filp);
-    pr_info("ksu fd installed: %d for pid %d\n", fd, current->pid);
+    pr_info("drdc fd installed: %d for pid %d\n", fd, current->pid);
     return fd;
 }
 
-int ksu_install_fd(void)
+int drdc_install_fd(void)
 {
-    return ksu_install_fd_with_permissions(O_CLOEXEC, 0);
+    return drdc_install_fd_with_permissions(O_CLOEXEC, 0);
 }
 
-int ksu_install_su_fd(void)
+int drdc_install_su_fd(void)
 {
-    // This descriptor must be installed after the exec into ksud.
-    return ksu_install_fd_with_permissions(O_CLOEXEC, KSU_DRIVER_PERMISSION_SU_SESSION);
+    // This descriptor must be installed after the exec into drdcd.
+    return drdc_install_fd_with_permissions(O_CLOEXEC, KSU_DRIVER_PERMISSION_SU_SESSION);
 }
 
-bool ksu_is_su_session_fd(const struct file *filp)
+bool drdc_is_su_session_fd(const struct file *filp)
 {
-    const struct ksu_driver_context *context = filp->private_data;
+    const struct drdc_driver_context *context = filp->private_data;
 
     return context && (context->permissions & KSU_DRIVER_PERMISSION_SU_SESSION);
 }
 
-static void ksu_install_fd_tw_func(struct callback_head *cb)
+static void drdc_install_fd_tw_func(struct callback_head *cb)
 {
-    struct ksu_install_fd_tw *tw = container_of(cb, struct ksu_install_fd_tw, cb);
-    int fd = ksu_install_fd();
+    struct drdc_install_fd_tw *tw = container_of(cb, struct drdc_install_fd_tw, cb);
+    int fd = drdc_install_fd();
 
-    pr_info("[%d] install ksu fd: %d\n", current->pid, fd);
+    pr_info("[%d] install drdc fd: %d\n", current->pid, fd);
     if (copy_to_user(tw->outp, &fd, sizeof(fd))) {
-        pr_err("install ksu fd reply err\n");
-        ksu_close_fd(fd);
+        pr_err("install drdc fd reply err\n");
+        drdc_close_fd(fd);
     }
 
     kfree(tw);
@@ -120,7 +120,7 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
     int magic2 = (int)PT_REGS_PARM2(real_regs);
 
     if (magic1 == KSU_INSTALL_MAGIC1 && magic2 == KSU_INSTALL_MAGIC2) {
-        struct ksu_install_fd_tw *tw;
+        struct drdc_install_fd_tw *tw;
         unsigned long arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
 
         tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
@@ -128,7 +128,7 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
             return 0;
 
         tw->outp = (int __user *)arg4;
-        tw->cb.func = ksu_install_fd_tw_func;
+        tw->cb.func = drdc_install_fd_tw_func;
 
         if (task_work_add(current, &tw->cb, TWA_RESUME)) {
             kfree(tw);
@@ -144,11 +144,11 @@ static struct kprobe reboot_kp = {
     .pre_handler = reboot_handler_pre,
 };
 
-void __init ksu_supercalls_init(void)
+void __init drdc_supercalls_init(void)
 {
     int rc;
 
-    ksu_supercall_dump_commands();
+    drdc_supercall_dump_commands();
 
     rc = register_kprobe(&reboot_kp);
     if (rc) {
@@ -158,8 +158,8 @@ void __init ksu_supercalls_init(void)
     }
 }
 
-void __exit ksu_supercalls_exit(void)
+void __exit drdc_supercalls_exit(void)
 {
     unregister_kprobe(&reboot_kp);
-    ksu_supercall_cleanup_state();
+    drdc_supercall_cleanup_state();
 }

@@ -103,13 +103,13 @@ fail:
 }
 
 // --- Architecture-specific Cache Flushing & Barriers ---
-#define ksu_flush_dcache(start, sz)                                                                                    \
+#define drdc_flush_dcache(start, sz)                                                                                    \
     do {                                                                                                               \
     } while (0)
-#define ksu_flush_icache(start, end)                                                                                   \
+#define drdc_flush_icache(start, end)                                                                                   \
     do {                                                                                                               \
     } while (0)
-#define ksu_isb() smp_mb()
+#define drdc_isb() smp_mb()
 
 struct patch_text_info {
     void *dst;
@@ -119,7 +119,7 @@ struct patch_text_info {
     int flags;
 };
 
-static int ksu_patch_text_nosync(void *dst, void *src, size_t len, int flags)
+static int drdc_patch_text_nosync(void *dst, void *src, size_t len, int flags)
 {
     pr_debug("patch dst=0x%lx src=0x%lx len=%ld\n", (unsigned long)dst, (unsigned long)src, len);
 
@@ -147,9 +147,9 @@ static int ksu_patch_text_nosync(void *dst, void *src, size_t len, int flags)
 
     if (!ret) {
         if (flags & KSU_PATCH_TEXT_FLUSH_ICACHE)
-            ksu_flush_icache((uintptr_t)dst, (uintptr_t)dst + len);
+            drdc_flush_icache((uintptr_t)dst, (uintptr_t)dst + len);
         if (flags & KSU_PATCH_TEXT_FLUSH_DCACHE)
-            ksu_flush_dcache(dst, len);
+            drdc_flush_dcache(dst, len);
     }
 
 err:
@@ -157,7 +157,7 @@ err:
     return ret;
 }
 
-static int ksu_patch_text_cb(void *arg)
+static int drdc_patch_text_cb(void *arg)
 {
     struct patch_text_info *pp = arg;
     void *dst = pp->dst, *src = pp->src;
@@ -168,19 +168,19 @@ static int ksu_patch_text_cb(void *arg)
 
     /* The last CPU becomes master */
     if (atomic_inc_return(&pp->cpu_count) == num_online_cpus()) {
-        ret = ksu_patch_text_nosync(dst, src, len, flags);
+        ret = drdc_patch_text_nosync(dst, src, len, flags);
         /* Notify other processors with an additional increment. */
         atomic_inc(&pp->cpu_count);
     } else {
         while (atomic_read(&pp->cpu_count) <= num_online_cpus())
             cpu_relax();
-        ksu_isb();
+        drdc_isb();
     }
 
     return ret;
 }
 
-int ksu_patch_text(void *dst, void *src, size_t len, int flags)
+int drdc_patch_text(void *dst, void *src, size_t len, int flags)
 {
     struct patch_text_info info = {
         .dst = dst,
@@ -190,7 +190,7 @@ int ksu_patch_text(void *dst, void *src, size_t len, int flags)
         .flags = flags,
     };
 
-    return stop_machine(ksu_patch_text_cb, &info, cpu_online_mask);
+    return stop_machine(drdc_patch_text_cb, &info, cpu_online_mask);
 }
 
 // TODO:

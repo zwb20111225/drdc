@@ -42,7 +42,7 @@ import java.util.zip.ZipFile
 private const val TAG = "KsuCli"
 
 private fun getKsuDaemonPath(): String {
-    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud.so"
+    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libdrdcd.so"
 }
 
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
@@ -215,7 +215,7 @@ fun flashModule(
     onStderr: (String) -> Unit
 ): FlashResult {
     // Registry downloads live in app-private storage and carry their expected size + SHA-256;
-    // the exact copy handed to ksud is re-hashed right before installing.
+    // the exact copy handed to drdcd is re-hashed right before installing.
     val storeRoot = File(ksuApp.filesDir, RegistryDownloadStore.DIR_NAME)
     val expected = if (uri.scheme == ContentResolver.SCHEME_FILE) {
         uri.path?.let { RegistryDownloadStore.expectedFor(storeRoot, File(it)) }
@@ -228,7 +228,7 @@ fun flashModule(
             val input = ksuApp.contentResolver.openInputStream(uri) ?: throw IOException("Cannot open $uri")
             input.use { copyForInstall(it, file, expected) }
         } catch (e: IOException) {
-            Log.w("KernelSU", "module $uri not installed: ${e.message}")
+            Log.w("DRDC", "module $uri not installed: ${e.message}")
             if (e is DownloadVerificationException) {
                 // Corrupted or tampered after download: never keep it around for a retry.
                 uri.path?.let { RegistryDownloadStore.delete(storeRoot, File(it)) }
@@ -239,7 +239,7 @@ fun flashModule(
         }
         val cmd = "module install ${file.absolutePath}"
         val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-        Log.i("KernelSU", "install module $uri result: $result")
+        Log.i("DRDC", "install module $uri result: $result")
         return FlashResult(result, result.isSuccess && moduleNeedsReboot(file))
     } finally {
         file.delete()
@@ -284,7 +284,7 @@ fun runModuleAction(
             .to(stdoutCallback, stderrCallback).exec()
     }
 
-    Log.i("KernelSU", "Module runAction result: $result")
+    Log.i("DRDC", "Module runAction result: $result")
 
     return result.isSuccess
 }
@@ -422,15 +422,15 @@ fun installBoot(
     }
 
     val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-    Log.i("KernelSU", "install boot result: ${result.isSuccess}")
+    Log.i("DRDC", "install boot result: ${result.isSuccess}")
 
     bootFile?.delete()
     lkmFile?.delete()
 
     // if boot uri is empty, it is direct install, when success, we should show reboot button
     val showReboot = bootUri == null && result.isSuccess // we create a temporary val here, to avoid calc showReboot double
-    if (showReboot) { // because we decide do not update ksud when startActivity
-        install() // install ksud here
+    if (showReboot) { // because we decide do not update drdcd when startActivity
+        install() // install drdcd here
     }
     return FlashResult(result, showReboot)
 }
@@ -484,7 +484,7 @@ fun downloadBoot(
 
     // init_boot/vendor_boot carry no kernel, so their KMI comes from the
     // payload's boot probe and must be passed explicitly. A remote download
-    // is unrelated to this device, so ksud must not use the local kernel.
+    // is unrelated to this device, so drdcd must not use the local kernel.
     val autoKmi = if (lkm is LkmSelection.KmiNone) {
         (probedKmi ?: BootKernelVersion.parseKmiFromBoot(bootFile))?.also {
             onStdout("- Auto detected KMI: $it")
@@ -508,7 +508,7 @@ fun downloadBoot(
     }
     if (autoKmi != null) cmd += " --kmi $autoKmi"
     cmd += " --partition $partition"
-    // ksud defaults to cwd, which is read-only in the su session; use Downloads.
+    // drdcd defaults to cwd, which is read-only in the su session; use Downloads.
     val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     cmd += " -o $downloadsDir"

@@ -64,7 +64,7 @@ object ScriptPackage {
     private const val S_IFDIR = 0x4000
     private const val S_IXUSR = 0x40
 
-    /** Same rule as ksud's `metamodule`: trimmed value is "1" or ASCII case-insensitive "true". */
+    /** Same rule as drdcd's `metamodule`: trimmed value is "1" or ASCII case-insensitive "true". */
     fun isOneshot(value: String?): Boolean {
         val v = value?.trim() ?: return false
         return v == "1" || v.equals("true", ignoreCase = true)
@@ -73,7 +73,7 @@ object ScriptPackage {
     fun isValidModuleId(id: String): Boolean = id.length in 2..64 && MODULE_ID.matches(id)
 
     /**
-     * Java properties, like ksud (java-properties crate) and the registry validator read
+     * Java properties, like drdcd (java-properties crate) and the registry validator read
      * module.prop: `=`, `:` or whitespace separators, escapes, continuation lines, the last
      * duplicate wins. A UTF-8 BOM is dropped.
      */
@@ -96,7 +96,7 @@ object ScriptPackage {
     }
 
     /**
-     * The path [name] extracts to, normalized like ksud's zip crate and the registry validator:
+     * The path [name] extracts to, normalized like drdcd's zip crate and the registry validator:
      * empty and `.` segments are dropped (`./a//b` -> `a/b`, `./` -> `""`, the root). Throws for
      * an absolute path, a `..` segment, a backslash or a control character.
      */

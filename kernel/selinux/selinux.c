@@ -4,7 +4,7 @@
 #include "objsec.h"
 #include "linux/version.h"
 #include "klog.h" // IWYU pragma: keep
-#include "ksu.h"
+#include "drdc.h"
 
 /*
  * Cached SID values for frequently checked contexts.
@@ -22,7 +22,7 @@ static u32 cached_su_sid __read_mostly = 0;
 static u32 cached_zygote_sid __read_mostly = 0;
 static u32 cached_init_sid __read_mostly = 0;
 static u32 cached_adbd_sid __read_mostly = 0;
-u32 ksu_file_sid __read_mostly = 0;
+u32 drdc_file_sid __read_mostly = 0;
 
 static int transive_to_domain(const char *domain, struct cred *cred, bool clear_exec_sid)
 {
@@ -62,10 +62,10 @@ void setup_selinux(const char *domain, struct cred *cred)
     }
 }
 
-void setup_ksu_cred(void)
+void setup_drdc_cred(void)
 {
-    if (transive_to_domain(KERNEL_SU_CONTEXT, ksu_cred, false)) {
-        pr_err("setup ksu cred failed.\n");
+    if (transive_to_domain(KERNEL_SU_CONTEXT, drdc_cred, false)) {
+        pr_err("setup drdc cred failed.\n");
     }
 }
 
@@ -151,12 +151,12 @@ void cache_sid(void)
         pr_info("Cached adbd SID: %u\n", cached_adbd_sid);
     }
 
-    err = security_secctx_to_secid(KSU_FILE_CONTEXT, strlen(KSU_FILE_CONTEXT), &ksu_file_sid);
+    err = security_secctx_to_secid(KSU_FILE_CONTEXT, strlen(KSU_FILE_CONTEXT), &drdc_file_sid);
     if (err) {
-        pr_warn("Failed to cache ksu_file SID: %d\n", err);
-        ksu_file_sid = 0;
+        pr_warn("Failed to cache drdc_file SID: %d\n", err);
+        drdc_file_sid = 0;
     } else {
-        pr_info("Cached ksu_file SID: %u\n", ksu_file_sid);
+        pr_info("Cached drdc_file SID: %u\n", drdc_file_sid);
     }
 }
 
@@ -194,14 +194,14 @@ static bool is_sid_match(const struct cred *cred, u32 cached_sid, const char *fa
     return result;
 }
 
-bool is_task_ksu_domain(const struct cred *cred)
+bool is_task_drdc_domain(const struct cred *cred)
 {
     return is_sid_match(cred, cached_su_sid, KERNEL_SU_CONTEXT);
 }
 
-bool is_ksu_domain(void)
+bool is_drdc_domain(void)
 {
-    return is_task_ksu_domain(current_cred());
+    return is_task_drdc_domain(current_cred());
 }
 
 bool is_zygote(const struct cred *cred)

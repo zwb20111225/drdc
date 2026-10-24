@@ -9,7 +9,7 @@
 #include <android/log.h>
 #include <cstring>
 
-#include "ksu.h"
+#include "drdc.h"
 #include "logging.h"
 
 extern "C"
@@ -38,7 +38,7 @@ Java_me_weishu_kernelsu_Natives_getManagerUAPIVersion(JNIEnv *env, jobject) {
 extern "C"
 JNIEXPORT jint JNICALL
 Java_me_weishu_kernelsu_Natives_getSuperuserCount(JNIEnv *env, jobject) {
-    struct ksu_new_get_allow_list_cmd cmd = {
+    struct drdc_new_get_allow_list_cmd cmd = {
         .count = 0
     };
     bool result = get_allow_list(&cmd);
@@ -158,7 +158,7 @@ Java_me_weishu_kernelsu_Natives_getAppProfile(JNIEnv *env, jobject, jstring pkg,
 
     bool useDefaultProfile = get_app_profile(&profile) != 0;
 
-    auto cls = env->FindClass("me/weishu/kernelsu/Natives$Profile");
+    auto cls = env->FindClass("me/weishu/drdc/Natives$Profile");
     auto constructor = env->GetMethodID(cls, "<init>", "()V");
     auto obj = env->NewObject(cls, constructor);
     auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
@@ -239,7 +239,7 @@ Java_me_weishu_kernelsu_Natives_getAppProfile(JNIEnv *env, jobject, jstring pkg,
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_me_weishu_kernelsu_Natives_setAppProfile(JNIEnv *env, jobject clazz, jobject profile) {
-    auto cls = env->FindClass("me/weishu/kernelsu/Natives$Profile");
+    auto cls = env->FindClass("me/weishu/drdc/Natives$Profile");
 
     auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
     auto currentUidField = env->GetFieldID(cls, "currentUid", "I");
@@ -375,7 +375,7 @@ Java_me_weishu_kernelsu_Natives_getUserName(JNIEnv *env, jobject thiz, jint uid)
     return nullptr;
 }
 
-int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
+int fork_dont_care_and_exec_drdcd(const char *path, const char *pkg) {
     int pid = fork();
     if (pid < 0) {
         PLOGE("fork");
@@ -405,7 +405,7 @@ int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
         _exit(0);
     }
 
-    execl(path, "ksud", "late-load", "--magica", "5555", "--package-name", pkg, nullptr);
+    execl(path, "drdcd", "late-load", "--magica", "5555", "--package-name", pkg, nullptr);
     PLOGE("exec magica");
     _exit(1);
 }
@@ -413,11 +413,11 @@ int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_me_weishu_kernelsu_magica_AppZygotePreload_forkDontCareAndExecKsud(JNIEnv *env, jclass clazz,
-                                                                        jstring ksud_path, jstring pkg_name) {
-    auto path = env->GetStringUTFChars(ksud_path, nullptr);
+                                                                        jstring drdcd_path, jstring pkg_name) {
+    auto path = env->GetStringUTFChars(drdcd_path, nullptr);
     auto pkg = env->GetStringUTFChars(pkg_name, nullptr);
     LOGD("executing magica %s (pkg %s)", path, pkg);
-    fork_dont_care_and_exec_ksud(path, pkg);
-    env->ReleaseStringUTFChars(ksud_path, path);
+    fork_dont_care_and_exec_drdcd(path, pkg);
+    env->ReleaseStringUTFChars(drdcd_path, path);
     env->ReleaseStringUTFChars(pkg_name, pkg);
 }

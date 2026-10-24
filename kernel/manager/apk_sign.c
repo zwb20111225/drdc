@@ -57,7 +57,7 @@ static int calc_hash(struct crypto_shash *alg, const unsigned char *data, unsign
     return ret;
 }
 
-static int ksu_sha256(const unsigned char *data, unsigned int datalen, unsigned char *digest)
+static int drdc_sha256(const unsigned char *data, unsigned int datalen, unsigned char *digest)
 {
     struct crypto_shash *alg;
     char *hash_alg_name = "sha256";
@@ -129,7 +129,7 @@ static bool check_block(struct file *fp, loff_t *pos, loff_t block_end, unsigned
         return false;
 
     unsigned char digest[SHA256_DIGEST_SIZE];
-    if (ksu_sha256(cert, certificate_size, digest)) {
+    if (drdc_sha256(cert, certificate_size, digest)) {
         pr_info("sha256 error\n");
         return false;
     }
@@ -155,7 +155,7 @@ static __always_inline bool check_v2_signature(char *path, unsigned expected_siz
     int v2_signing_blocks = 0;
 
     int i;
-    struct file *fp = ksu_filp_open_nonotify(path, O_RDONLY | O_NOATIME);
+    struct file *fp = drdc_filp_open_nonotify(path, O_RDONLY | O_NOATIME);
     if (IS_ERR(fp)) {
         pr_err("open %s error.\n", path);
         return false;
@@ -276,15 +276,15 @@ clean:
 
 #ifdef CONFIG_KSU_DEBUG
 
-int ksu_debug_manager_appid = -1;
+int drdc_debug_manager_appid = -1;
 
 #include "manager/manager_identity.h"
 
 static int set_expected_size(const char *val, const struct kernel_param *kp)
 {
     int rv = param_set_uint(val, kp);
-    ksu_set_manager_appid(ksu_debug_manager_appid);
-    pr_info("ksu_manager_appid set to %d\n", ksu_debug_manager_appid);
+    drdc_set_manager_appid(drdc_debug_manager_appid);
+    pr_info("drdc_manager_appid set to %d\n", drdc_debug_manager_appid);
     return rv;
 }
 
@@ -293,7 +293,7 @@ static struct kernel_param_ops expected_size_ops = {
     .get = param_get_uint,
 };
 
-module_param_cb(ksu_debug_manager_appid, &expected_size_ops, &ksu_debug_manager_appid, S_IRUSR | S_IWUSR);
+module_param_cb(drdc_debug_manager_appid, &expected_size_ops, &drdc_debug_manager_appid, S_IRUSR | S_IWUSR);
 
 #endif
 

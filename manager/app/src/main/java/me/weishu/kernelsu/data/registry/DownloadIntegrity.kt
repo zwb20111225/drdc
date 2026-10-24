@@ -96,7 +96,7 @@ fun verifyFile(file: File, expected: ExpectedFile) {
 }
 
 /**
- * Copies a module ZIP to [dest] (the exact file handed to `ksud module install`) and, when
+ * Copies a module ZIP to [dest] (the exact file handed to `drdcd module install`) and, when
  * [expected] is set, re-hashes the copy on disk right before installing. On mismatch [dest]
  * is deleted and [DownloadVerificationException] is thrown.
  */

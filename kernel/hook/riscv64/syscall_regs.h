@@ -5,13 +5,13 @@
 #include <linux/errno.h>
 #include <asm/ptrace.h>
 
-static inline void ksu_riscv_redirect_syscall(struct pt_regs *regs, long nr, int dispatcher)
+static inline void drdc_riscv_redirect_syscall(struct pt_regs *regs, long nr, int dispatcher)
 {
     regs->a0 = nr;
     regs->a7 = dispatcher;
 }
 
-static inline int ksu_riscv_restore_syscall(struct pt_regs *regs, int dispatcher, unsigned int count)
+static inline int drdc_riscv_restore_syscall(struct pt_regs *regs, int dispatcher, unsigned int count)
 {
     long nr = (long)regs->a0;
 

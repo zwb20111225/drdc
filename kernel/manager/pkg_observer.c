@@ -23,7 +23,7 @@ struct watch_dir {
 
 static struct fsnotify_group *g;
 
-static void ksu_track_throne_tw_func(struct callback_head *cb)
+static void drdc_track_throne_tw_func(struct callback_head *cb)
 {
     kfree(cb);
     // Runs after exit_fs() if the task is exiting; path lookups would oops
@@ -37,14 +37,14 @@ static void ksu_track_throne_tw_func(struct callback_head *cb)
 // or kworker: the scan must finish before the rename returns, or the manager
 // can be opened before it is crowned, and it must run in the renamer's
 // (Android's) namespaces, which differ from init_task's on WSA/Waydroid.
-static void ksu_defer_track_throne(void)
+static void drdc_defer_track_throne(void)
 {
     struct callback_head *cb;
 
     if (!(current->flags & PF_KTHREAD)) {
         cb = kzalloc(sizeof(*cb), GFP_KERNEL);
         if (cb) {
-            cb->func = ksu_track_throne_tw_func;
+            cb->func = drdc_track_throne_tw_func;
             if (!task_work_add(current, cb, TWA_RESUME))
                 return;
             kfree(cb);
@@ -54,7 +54,7 @@ static void ksu_defer_track_throne(void)
     track_throne(false);
 }
 
-static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct inode *inode, struct inode *dir,
+static int drdc_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct inode *inode, struct inode *dir,
                                   const struct qstr *file_name, u32 cookie)
 {
     if (!file_name)
@@ -63,13 +63,13 @@ static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct i
         return 0;
     if (file_name->len == 13 && !memcmp(file_name->name, "packages.list", 13)) {
         pr_info("packages.list detected: %d\n", mask);
-        ksu_defer_track_throne();
+        drdc_defer_track_throne();
     }
     return 0;
 }
 
-static const struct fsnotify_ops ksu_ops = {
-    .handle_inode_event = ksu_handle_inode_event,
+static const struct fsnotify_ops drdc_ops = {
+    .handle_inode_event = drdc_handle_inode_event,
 };
 
 static int add_mark_on_inode(struct inode *inode, u32 mask, struct fsnotify_mark **out)
@@ -132,14 +132,14 @@ static void unwatch_one_dir(struct watch_dir *wd)
 
 static struct watch_dir g_watch = { .path = "/data/system", .mask = MASK_SYSTEM };
 
-int ksu_observer_init(void)
+int drdc_observer_init(void)
 {
     int ret = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
-    g = fsnotify_alloc_group(&ksu_ops, 0);
+    g = fsnotify_alloc_group(&drdc_ops, 0);
 #else
-    g = fsnotify_alloc_group(&ksu_ops);
+    g = fsnotify_alloc_group(&drdc_ops);
 #endif
     if (IS_ERR(g))
         return PTR_ERR(g);
@@ -149,7 +149,7 @@ int ksu_observer_init(void)
     return 0;
 }
 
-void __exit ksu_observer_exit(void)
+void __exit drdc_observer_exit(void)
 {
     unwatch_one_dir(&g_watch);
     fsnotify_put_group(g);

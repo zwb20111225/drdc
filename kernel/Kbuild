@@ -1,60 +1,60 @@
-kernelsu-objs := core/init.o
+drdc-objs := core/init.o
 
-kernelsu-objs += feature/kernel_umount.o
-kernelsu-objs += feature/module_blacklist.o
-kernelsu-objs += feature/sulog.o
-kernelsu-objs += feature/sucompat.o
+drdc-objs += feature/kernel_umount.o
+drdc-objs += feature/module_blacklist.o
+drdc-objs += feature/sulog.o
+drdc-objs += feature/sucompat.o
 
-kernelsu-objs += hook/lsm_hook.o
-kernelsu-objs += hook/setuid_hook.o
-kernelsu-objs += hook/syscall_event_bridge.o
-kernelsu-objs += hook/syscall_hook_manager.o
-kernelsu-objs += hook/tp_marker.o
+drdc-objs += hook/lsm_hook.o
+drdc-objs += hook/setuid_hook.o
+drdc-objs += hook/syscall_event_bridge.o
+drdc-objs += hook/syscall_hook_manager.o
+drdc-objs += hook/tp_marker.o
 ifeq ($(CONFIG_ARM64),y)
-kernelsu-objs += hook/arm64/patch_memory.o
-kernelsu-objs += hook/arm64/syscall_hook.o
+drdc-objs += hook/arm64/patch_memory.o
+drdc-objs += hook/arm64/syscall_hook.o
 else ifeq ($(CONFIG_X86_64),y)
-kernelsu-objs += hook/x86_64/patch_memory.o
-kernelsu-objs += hook/x86_64/syscall_hook.o
+drdc-objs += hook/x86_64/patch_memory.o
+drdc-objs += hook/x86_64/syscall_hook.o
 else ifeq ($(CONFIG_RISCV),y)
-kernelsu-objs += hook/riscv64/patch_memory.o
-kernelsu-objs += hook/riscv64/syscall_hook.o
+drdc-objs += hook/riscv64/patch_memory.o
+drdc-objs += hook/riscv64/syscall_hook.o
 endif
 
-kernelsu-objs += infra/file_wrapper.o
-kernelsu-objs += infra/event_queue.o
-kernelsu-objs += infra/seccomp_cache.o
-kernelsu-objs += infra/su_mount_ns.o
-kernelsu-objs += infra/symbol_resolver.o
+drdc-objs += infra/file_wrapper.o
+drdc-objs += infra/event_queue.o
+drdc-objs += infra/seccomp_cache.o
+drdc-objs += infra/su_mount_ns.o
+drdc-objs += infra/symbol_resolver.o
 
 ifneq ($(CONFIG_KSU_DISABLE_MANAGER),y)
-kernelsu-objs += manager/apk_sign.o
-kernelsu-objs += manager/pkg_observer.o
-kernelsu-objs += manager/throne_tracker.o
+drdc-objs += manager/apk_sign.o
+drdc-objs += manager/pkg_observer.o
+drdc-objs += manager/throne_tracker.o
 endif
 
-kernelsu-objs += policy/allowlist.o
-kernelsu-objs += policy/app_profile.o
-kernelsu-objs += policy/feature.o
+drdc-objs += policy/allowlist.o
+drdc-objs += policy/app_profile.o
+drdc-objs += policy/feature.o
 
-kernelsu-objs += runtime/boot_event.o
-kernelsu-objs += runtime/ksud_integration.o
+drdc-objs += runtime/boot_event.o
+drdc-objs += runtime/drdcd_integration.o
 
-kernelsu-objs += selinux/selinux.o
-kernelsu-objs += selinux/rules.o
-kernelsu-objs += selinux/sepolicy.o
+drdc-objs += selinux/selinux.o
+drdc-objs += selinux/rules.o
+drdc-objs += selinux/sepolicy.o
 
-kernelsu-objs += sulog/event.o
-kernelsu-objs += sulog/fd.o
+drdc-objs += sulog/event.o
+drdc-objs += sulog/fd.o
 
-kernelsu-objs += supercall/dispatch.o
-kernelsu-objs += supercall/perm.o
-kernelsu-objs += supercall/supercall.o
+drdc-objs += supercall/dispatch.o
+drdc-objs += supercall/perm.o
+drdc-objs += supercall/supercall.o
 
-kernelsu-objs += feature/adb_root.o
+drdc-objs += feature/adb_root.o
 
-kernelsu-objs += feature/selinux_hide.o
-kernelsu-objs += feature/shell_su_adb_only.o
+drdc-objs += feature/selinux_hide.o
+drdc-objs += feature/shell_su_adb_only.o
 
 ifdef KBUILD_EXTMOD
 ifeq ($(CONFIG_KSU_DISABLE_MANAGER),y)
@@ -90,13 +90,13 @@ endif
 
 ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include
 
-# preinit runner: a static nolibc binary embedded into kernelsu, see preinit/.
+# preinit runner: a static nolibc binary embedded into drdc, see preinit/.
 # It is built against the installed UAPI headers of the target kernel
 # (CONFIG_HEADERS_INSTALL, enabled by gki_defconfig).
 KSU_UAPI_INC := $(objtree)/usr/include
 ifneq ($(wildcard $(KSU_UAPI_INC)/linux/unistd.h),)
-kernelsu-objs += preinit/preinit.o
-kernelsu-objs += preinit/blob.o
+drdc-objs += preinit/preinit.o
+drdc-objs += preinit/blob.o
 
 KSU_RUNNER_CFLAGS := $(CLANG_FLAGS) -std=gnu11 -Os -Wall \
 	-nostdinc -isystem $(shell $(CC) -print-file-name=include) \
@@ -106,8 +106,8 @@ KSU_RUNNER_CFLAGS := $(CLANG_FLAGS) -std=gnu11 -Os -Wall \
 	-fno-asynchronous-unwind-tables -fno-unwind-tables \
 	-ffunction-sections -fdata-sections
 
-quiet_cmd_ksu_runner = RUNNER  $@
-      cmd_ksu_runner = $(CC) $(KSU_RUNNER_CFLAGS) -c -o $@.o $< && \
+quiet_cmd_drdc_runner = RUNNER  $@
+      cmd_drdc_runner = $(CC) $(KSU_RUNNER_CFLAGS) -c -o $@.o $< && \
 		$(LD) -static -nostdlib -e _start --gc-sections -s -o $@ $@.o && \
 		rm -f $@.o
 
@@ -115,17 +115,17 @@ $(obj)/preinit/runner.elf: $(KSU_KERNEL_DIR)/preinit/runner/runner.c \
 		$(wildcard $(KSU_KERNEL_DIR)/preinit/runner/nolibc/*.h \
 			   $(KSU_KERNEL_DIR)/preinit/runner/nolibc/sys/*.h \
 			   $(KSU_KERNEL_DIR)/include/uapi/*.h) FORCE
-	$(call if_changed,ksu_runner)
+	$(call if_changed,drdc_runner)
 
 targets += preinit/runner.elf
 $(obj)/preinit/blob.o: $(obj)/preinit/runner.elf
 asflags-y += -DKSU_PREINIT_RUNNER_BIN=\"$(obj)/preinit/runner.elf\"
 else
-$(warning -- KernelSU: $(KSU_UAPI_INC) not found, preinit disabled)
+$(warning -- DRDC: $(KSU_UAPI_INC) not found, preinit disabled)
 ccflags-y += -DKSU_NO_PREINIT
 endif
 
-obj-$(CONFIG_KSU) += kernelsu.o
+obj-$(CONFIG_KSU) += drdc.o
 
 MDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -143,23 +143,23 @@ ifneq ($(GIT_ROOT),$(KERNEL_GIT_ROOT))
 $(shell cd $(GIT_ROOT) && [ -f .git/shallow ] && $(GIT) fetch --unshallow 2>/dev/null || true)
 KSU_GIT_VERSION := $(shell cd $(GIT_ROOT) && $(GIT) rev-list --count HEAD 2>/dev/null)
 KSU_GIT_VERSION_VALID := 1
-$(info -- KernelSU: Git repo detected at $(GIT_ROOT))
+$(info -- DRDC: Git repo detected at $(GIT_ROOT))
 endif
 endif
 else
-$(warning -- KernelSU: Git not detected, make sure git is installed in your PATH!)
+$(warning -- DRDC: Git not detected, make sure git is installed in your PATH!)
 endif
 
 
 # Calculate version if git version is available
 ifdef KSU_GIT_VERSION_VALID
-# ksu_version: major * 10000 + git version + 200 for historical reasons
+# drdc_version: major * 10000 + git version + 200 for historical reasons
 $(eval KSU_VERSION=$(shell expr 30000 + $(KSU_GIT_VERSION)))
-$(info -- KernelSU version: $(KSU_VERSION))
+$(info -- DRDC version: $(KSU_VERSION))
 ccflags-y += -DKSU_VERSION=$(KSU_VERSION)
 else
 # If there is no .git directory, use default version
-$(warning "KSU_GIT_VERSION not defined! It is better to make KernelSU a git repository!")
+$(warning "KSU_GIT_VERSION not defined! It is better to make DRDC a git repository!")
 ccflags-y += -DKSU_VERSION=16
 endif
 
@@ -168,17 +168,17 @@ $(info -- KSU_NEW_DCACHE_FLUSH: $(KSU_NEW_DCACHE_FLUSH))
 
 KSU_IS_PR_BUILD ?= 0
 ifeq ($(KSU_IS_PR_BUILD),0)
-KSU_PACKAGE_NAME ?= me.weishu.kernelsu
+KSU_PACKAGE_NAME ?= com.drdc.winter
 else
-KSU_PACKAGE_NAME ?= me.weishu.kernelsu.pr
+KSU_PACKAGE_NAME ?= com.drdc.winter.pr
 endif
-KSU_EXPECTED_SIZE ?= 0x033b
-KSU_EXPECTED_HASH ?= c371061b19d8c7d7d6133c6a9bafe198fa944e50c1b31c9d8daa8d7f1fc2d2d6
+KSU_EXPECTED_SIZE ?= 0x0330
+KSU_EXPECTED_HASH ?= a339bd48cd5706135778273537704eddd4386e0c9fe50f70a81696c14dc859fe
 
-$(info -- KernelSU Manager package name: $(KSU_PACKAGE_NAME))
-$(info -- KernelSU Manager signature size: $(KSU_EXPECTED_SIZE))
-$(info -- KernelSU Manager signature hash: $(KSU_EXPECTED_HASH))
-$(info -- KernelSU is PR Build: $(KSU_IS_PR_BUILD))
+$(info -- DRDC Manager package name: $(KSU_PACKAGE_NAME))
+$(info -- DRDC Manager signature size: $(KSU_EXPECTED_SIZE))
+$(info -- DRDC Manager signature hash: $(KSU_EXPECTED_HASH))
+$(info -- DRDC is PR Build: $(KSU_IS_PR_BUILD))
 
 ccflags-y += -DKSU_PACKAGE_NAME=\"$(KSU_PACKAGE_NAME)\"
 ccflags-y += -DEXPECTED_SIZE=$(KSU_EXPECTED_SIZE)

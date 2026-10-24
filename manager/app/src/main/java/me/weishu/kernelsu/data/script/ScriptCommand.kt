@@ -1,6 +1,6 @@
 package me.weishu.kernelsu.data.script
 
-/** What the manager knows about the running KernelSU, exported to the script like ksud does. */
+/** What the manager knows about the running KernelSU, exported to the script like drdcd does. */
 data class ScriptHostInfo(
     val ksuVersion: String,
     val ksuVersionCode: Int,
@@ -13,7 +13,7 @@ data class ScriptHostInfo(
  * single-quoted; only `$PATH` itself is left to the shell to expand.
  */
 object ScriptCommand {
-    const val BIN_DIR = "/data/adb/ksu/bin"
+    const val BIN_DIR = "/data/adb/drdc/bin"
     const val BUSYBOX = "$BIN_DIR/busybox"
     const val ENTRY = "action.sh"
 

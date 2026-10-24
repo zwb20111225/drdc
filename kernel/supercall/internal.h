@@ -11,8 +11,8 @@ bool manager_or_root(void);
 bool always_allow(void);
 bool allowed_for_su(void);
 
-long ksu_supercall_handle_ioctl(const struct file *filp, unsigned int cmd, void __user *argp);
-void ksu_supercall_dump_commands(void);
-void ksu_supercall_cleanup_state(void);
+long drdc_supercall_handle_ioctl(const struct file *filp, unsigned int cmd, void __user *argp);
+void drdc_supercall_dump_commands(void);
+void drdc_supercall_cleanup_state(void);
 
 #endif // __KSU_H_SUPERCALL_INTERNAL

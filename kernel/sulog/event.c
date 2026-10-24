@@ -37,20 +37,20 @@ struct user_arg_ptr {
     } ptr;
 };
 
-static struct ksu_event_queue sulog_queue;
+static struct drdc_event_queue sulog_queue;
 
-struct ksu_sulog_pending_event {
+struct drdc_sulog_pending_event {
     __u16 event_type;
     void *payload;
     __u32 payload_len;
 };
 
-struct ksu_sulog_identity {
+struct drdc_sulog_identity {
     __u32 uid;
     __u32 euid;
 };
 
-static struct user_arg_ptr ksu_sulog_user_argv(const char __user *const __user *argv_user)
+static struct user_arg_ptr drdc_sulog_user_argv(const char __user *const __user *argv_user)
 {
     struct user_arg_ptr argv;
 
@@ -67,7 +67,7 @@ static struct user_arg_ptr ksu_sulog_user_argv(const char __user *const __user *
     return argv;
 }
 
-static const char __user *ksu_sulog_get_user_arg_ptr(struct user_arg_ptr argv, int nr)
+static const char __user *drdc_sulog_get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 {
     const char __user *native;
 
@@ -88,7 +88,7 @@ static const char __user *ksu_sulog_get_user_arg_ptr(struct user_arg_ptr argv, i
     return native;
 }
 
-static void ksu_sulog_fill_task_info(struct ksu_sulog_event *event, __u16 event_type, int retval)
+static void drdc_sulog_fill_task_info(struct drdc_sulog_event *event, __u16 event_type, int retval)
 {
     event->version = KSU_SULOG_EVENT_VERSION;
     event->event_type = event_type;
@@ -101,7 +101,7 @@ static void ksu_sulog_fill_task_info(struct ksu_sulog_event *event, __u16 event_
     get_task_comm(event->comm, current);
 }
 
-static void ksu_sulog_set_identity(struct ksu_sulog_event *event, const struct ksu_sulog_identity *identity)
+static void drdc_sulog_set_identity(struct drdc_sulog_event *event, const struct drdc_sulog_identity *identity)
 {
     if (!identity)
         return;
@@ -110,13 +110,13 @@ static void ksu_sulog_set_identity(struct ksu_sulog_event *event, const struct k
     event->euid = identity->euid;
 }
 
-static __u32 ksu_sulog_copy_empty_string(char *dst)
+static __u32 drdc_sulog_copy_empty_string(char *dst)
 {
     dst[0] = '\0';
     return 1;
 }
 
-static __u32 ksu_sulog_copy_filename(const char __user *filename_user, char *dst, __u32 dst_len)
+static __u32 drdc_sulog_copy_filename(const char __user *filename_user, char *dst, __u32 dst_len)
 {
     long ret;
 
@@ -124,11 +124,11 @@ static __u32 ksu_sulog_copy_filename(const char __user *filename_user, char *dst
         return 0;
 
     if (!filename_user)
-        return ksu_sulog_copy_empty_string(dst);
+        return drdc_sulog_copy_empty_string(dst);
 
     ret = strncpy_from_user_nofault(dst, (const void __user *)untagged_addr((unsigned long)filename_user), dst_len);
     if (ret <= 0)
-        return ksu_sulog_copy_empty_string(dst);
+        return drdc_sulog_copy_empty_string(dst);
 
     if (ret >= dst_len) {
         dst[dst_len - 1] = '\0';
@@ -138,9 +138,9 @@ static __u32 ksu_sulog_copy_filename(const char __user *filename_user, char *dst
     return ret + 1;
 }
 
-static __u32 ksu_sulog_flatten_argv(const char __user *const __user *argv_user, char *dst, __u32 dst_len)
+static __u32 drdc_sulog_flatten_argv(const char __user *const __user *argv_user, char *dst, __u32 dst_len)
 {
-    struct user_arg_ptr argv = ksu_sulog_user_argv(argv_user);
+    struct user_arg_ptr argv = drdc_sulog_user_argv(argv_user);
     char arg[KSU_SULOG_MAX_ARG_CHUNK];
     __u32 used = 0;
     int i;
@@ -149,7 +149,7 @@ static __u32 ksu_sulog_flatten_argv(const char __user *const __user *argv_user, 
         return 0;
 
     if (!argv_user)
-        return ksu_sulog_copy_empty_string(dst);
+        return drdc_sulog_copy_empty_string(dst);
 
     for (i = 0; i < KSU_SULOG_MAX_ARG_STRINGS; i++) {
         const char __user *arg_user;
@@ -159,16 +159,16 @@ static __u32 ksu_sulog_flatten_argv(const char __user *const __user *argv_user, 
         if (fatal_signal_pending(current))
             break;
 
-        arg_user = ksu_sulog_get_user_arg_ptr(argv, i);
+        arg_user = drdc_sulog_get_user_arg_ptr(argv, i);
         if (!arg_user)
             break;
         if (IS_ERR(arg_user))
-            return ksu_sulog_copy_empty_string(dst);
+            return drdc_sulog_copy_empty_string(dst);
 
         copied =
             strncpy_from_user_nofault(arg, (const void __user *)untagged_addr((unsigned long)arg_user), sizeof(arg));
         if (copied <= 0)
-            return ksu_sulog_copy_empty_string(dst);
+            return drdc_sulog_copy_empty_string(dst);
 
         if (copied >= sizeof(arg))
             arg[sizeof(arg) - 1] = '\0';
@@ -195,11 +195,11 @@ static __u32 ksu_sulog_flatten_argv(const char __user *const __user *argv_user, 
     return used + 1;
 }
 
-static struct ksu_sulog_pending_event *ksu_sulog_capture(__u16 event_type, const char __user *filename_user,
+static struct drdc_sulog_pending_event *drdc_sulog_capture(__u16 event_type, const char __user *filename_user,
                                                          const char __user *const __user *argv_user, gfp_t gfp)
 {
-    struct ksu_sulog_pending_event *pending = NULL;
-    struct ksu_sulog_event *event;
+    struct drdc_sulog_pending_event *pending = NULL;
+    struct drdc_sulog_event *event;
     void *payload = NULL;
     __u32 payload_len;
     __u32 filename_len;
@@ -207,7 +207,7 @@ static struct ksu_sulog_pending_event *ksu_sulog_capture(__u16 event_type, const
     __u32 remaining;
     char *filename_buf;
     char *argv_buf;
-    if (!ksu_sulog_is_enabled())
+    if (!drdc_sulog_is_enabled())
         return NULL;
 
     pending = kzalloc(sizeof(*pending), gfp);
@@ -219,17 +219,17 @@ static struct ksu_sulog_pending_event *ksu_sulog_capture(__u16 event_type, const
         goto out_free_pending;
 
     event = payload;
-    ksu_sulog_fill_task_info(event, event_type, 0);
+    drdc_sulog_fill_task_info(event, event_type, 0);
 
     remaining = KSU_SULOG_MAX_PAYLOAD_LEN - sizeof(*event);
     filename_buf = (char *)payload + sizeof(*event);
-    filename_len = ksu_sulog_copy_filename(filename_user, filename_buf, min(remaining, KSU_SULOG_MAX_FILENAME_LEN));
+    filename_len = drdc_sulog_copy_filename(filename_user, filename_buf, min(remaining, KSU_SULOG_MAX_FILENAME_LEN));
     if (!filename_len)
         goto out_free_payload;
 
     remaining -= filename_len;
     argv_buf = filename_buf + filename_len;
-    argv_len = ksu_sulog_flatten_argv(argv_user, argv_buf, remaining);
+    argv_len = drdc_sulog_flatten_argv(argv_user, argv_buf, remaining);
     if (!argv_len)
         goto out_free_payload;
 
@@ -250,37 +250,37 @@ out_free_payload:
 out_free_pending:
     kfree(pending);
 out_drop:
-    ksu_event_queue_drop(&sulog_queue);
+    drdc_event_queue_drop(&sulog_queue);
     return NULL;
 }
 
-static struct ksu_sulog_pending_event *ksu_sulog_capture_grant_root(const struct ksu_sulog_identity *identity,
+static struct drdc_sulog_pending_event *drdc_sulog_capture_grant_root(const struct drdc_sulog_identity *identity,
                                                                     gfp_t gfp)
 {
-    struct ksu_sulog_pending_event *pending;
-    struct ksu_sulog_event *event;
+    struct drdc_sulog_pending_event *pending;
+    struct drdc_sulog_event *event;
 
-    pending = ksu_sulog_capture(KSU_SULOG_EVENT_IOCTL_GRANT_ROOT, NULL, NULL, gfp);
+    pending = drdc_sulog_capture(KSU_SULOG_EVENT_IOCTL_GRANT_ROOT, NULL, NULL, gfp);
     if (!pending)
         return NULL;
 
     event = pending->payload;
-    ksu_sulog_set_identity(event, identity);
+    drdc_sulog_set_identity(event, identity);
     return pending;
 }
 
-int __init ksu_sulog_events_init(void)
+int __init drdc_sulog_events_init(void)
 {
-    ksu_event_queue_init(&sulog_queue, KSU_SULOG_MAX_QUEUED, KSU_SULOG_MAX_PAYLOAD_LEN);
+    drdc_event_queue_init(&sulog_queue, KSU_SULOG_MAX_QUEUED, KSU_SULOG_MAX_PAYLOAD_LEN);
     return 0;
 }
 
-void __exit ksu_sulog_events_exit(void)
+void __exit drdc_sulog_events_exit(void)
 {
-    ksu_event_queue_destroy(&sulog_queue);
+    drdc_event_queue_destroy(&sulog_queue);
 }
 
-static void ksu_sulog_free_pending(struct ksu_sulog_pending_event *pending)
+static void drdc_sulog_free_pending(struct drdc_sulog_pending_event *pending)
 {
     if (!pending)
         return;
@@ -288,48 +288,48 @@ static void ksu_sulog_free_pending(struct ksu_sulog_pending_event *pending)
     kfree(pending);
 }
 
-struct ksu_sulog_pending_event *ksu_sulog_capture_root_execve(const char __user *filename_user,
+struct drdc_sulog_pending_event *drdc_sulog_capture_root_execve(const char __user *filename_user,
                                                               const char __user *const __user *argv_user, gfp_t gfp)
 {
-    return ksu_sulog_capture(KSU_SULOG_EVENT_ROOT_EXECVE, filename_user, argv_user, gfp);
+    return drdc_sulog_capture(KSU_SULOG_EVENT_ROOT_EXECVE, filename_user, argv_user, gfp);
 }
 
-struct ksu_sulog_pending_event *ksu_sulog_capture_sucompat(const char __user *filename_user,
+struct drdc_sulog_pending_event *drdc_sulog_capture_sucompat(const char __user *filename_user,
                                                            const char __user *const __user *argv_user, gfp_t gfp)
 {
-    return ksu_sulog_capture(KSU_SULOG_EVENT_SUCOMPAT, filename_user, argv_user, gfp);
+    return drdc_sulog_capture(KSU_SULOG_EVENT_SUCOMPAT, filename_user, argv_user, gfp);
 }
 
-void ksu_sulog_emit_pending(struct ksu_sulog_pending_event *pending, int retval, gfp_t gfp)
+void drdc_sulog_emit_pending(struct drdc_sulog_pending_event *pending, int retval, gfp_t gfp)
 {
-    struct ksu_sulog_event *event;
+    struct drdc_sulog_event *event;
 
     if (!pending)
         return;
 
     event = pending->payload;
     event->retval = retval;
-    ksu_event_queue_push(&sulog_queue, pending->event_type, 0, pending->payload, pending->payload_len, gfp);
-    ksu_sulog_free_pending(pending);
+    drdc_event_queue_push(&sulog_queue, pending->event_type, 0, pending->payload, pending->payload_len, gfp);
+    drdc_sulog_free_pending(pending);
 }
 
-int ksu_sulog_emit_grant_root(int retval, __u32 uid, __u32 euid, gfp_t gfp)
+int drdc_sulog_emit_grant_root(int retval, __u32 uid, __u32 euid, gfp_t gfp)
 {
-    struct ksu_sulog_pending_event *pending;
-    struct ksu_sulog_identity identity = {
+    struct drdc_sulog_pending_event *pending;
+    struct drdc_sulog_identity identity = {
         .uid = uid,
         .euid = euid,
     };
 
-    pending = ksu_sulog_capture_grant_root(&identity, gfp);
+    pending = drdc_sulog_capture_grant_root(&identity, gfp);
     if (!pending)
         return 0;
 
-    ksu_sulog_emit_pending(pending, retval, gfp);
+    drdc_sulog_emit_pending(pending, retval, gfp);
     return 0;
 }
 
-struct ksu_event_queue *ksu_sulog_get_queue(void)
+struct drdc_event_queue *drdc_sulog_get_queue(void)
 {
     return &sulog_queue;
 }
