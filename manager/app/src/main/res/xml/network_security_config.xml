@@ -4,5 +4,8 @@
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">0.0.0.0</domain>
         <domain includeSubdomains="true">::1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Development card-key server; production builds should point at an HTTPS domain. -->
+        <domain includeSubdomains="true">192.168.2.101</domain>
     </domain-config>
 </network-security-config>

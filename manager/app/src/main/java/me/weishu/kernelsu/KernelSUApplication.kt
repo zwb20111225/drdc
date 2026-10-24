@@ -8,6 +8,7 @@ import android.system.Os
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import okhttp3.Cache
@@ -74,6 +75,8 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
                             .header("Accept-Language", Locale.getDefault().toLanguageTag()).build()
                     )
                 }.build()
+
+        KeyGuard.init(this)
     }
 
     override val viewModelStore: ViewModelStore

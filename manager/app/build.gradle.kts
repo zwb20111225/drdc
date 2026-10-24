@@ -151,6 +151,17 @@ android {
         buildConfigField("boolean", "IS_PR_BUILD", isPrBuild.toString())
         resValue("string", "app_name", managerName)
 
+        // Card-key server. Override at build time with -PdrdcKeyServerUrl=... / -PdrdcKeyAppSecret=...
+        // (or the DRDC_KEY_SERVER_URL / DRDC_KEY_APP_SECRET environment variables).
+        val keyServerUrl = (findProperty("drdcKeyServerUrl") as String?)
+            ?: System.getenv("DRDC_KEY_SERVER_URL")
+            ?: "http://192.168.2.101:8080"
+        val keyAppSecret = (findProperty("drdcKeyAppSecret") as String?)
+            ?: System.getenv("DRDC_KEY_APP_SECRET")
+            ?: "dev-app-secret-0123456789"
+        buildConfigField("String", "KEY_SERVER_URL", "\"$keyServerUrl\"")
+        buildConfigField("String", "KEY_APP_SECRET", "\"$keyAppSecret\"")
+
         externalNativeBuild {
             cmake {
                 arguments += "-DANDROID_STL=none"

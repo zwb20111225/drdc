@@ -57,6 +57,7 @@ import me.weishu.kernelsu.ui.component.bottombar.MainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.NavigationBadgeState
 import me.weishu.kernelsu.ui.component.bottombar.SideRail
 import me.weishu.kernelsu.ui.component.bottombar.rememberMainPagerState
+import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
 import me.weishu.kernelsu.ui.navigation3.IntentDispatcher
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
@@ -71,6 +72,7 @@ import me.weishu.kernelsu.ui.screen.files.FilesPager
 import me.weishu.kernelsu.ui.screen.flash.FlashScreen
 import me.weishu.kernelsu.ui.screen.home.HomePager
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
+import me.weishu.kernelsu.ui.screen.keys.KeyGate
 import me.weishu.kernelsu.ui.screen.keys.KeysPager
 import me.weishu.kernelsu.ui.screen.module.ModulePager
 import me.weishu.kernelsu.ui.screen.modulerepo.ModuleRepoDetailScreen
@@ -190,11 +192,13 @@ class MainActivity : ComponentActivity() {
                     // (and their swipeDismiss) when the builder lambda changes, so it must capture the value.
                     val scriptRunSwipeDismiss = if (scriptRunBackEnabled) swipeDismiss else NavSwipeDirection.None
                     val mainScreenEntry = @Composable {
-                        MainScreen(
-                            initialPage = selectedMainPage,
-                            pagerInterceptionMode = uiState.pagerInterceptionMode,
-                            onPageChanged = viewModel::setSelectedMainPage,
-                        )
+                        KeyGate {
+                            MainScreen(
+                                initialPage = selectedMainPage,
+                                pagerInterceptionMode = uiState.pagerInterceptionMode,
+                                onPageChanged = viewModel::setSelectedMainPage,
+                            )
+                        }
                     }
 
                     val navDisplay = @Composable {
@@ -272,6 +276,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Re-validate the card key whenever the manager comes back to the foreground.
+        KeyGuard.onForeground()
     }
 
     override fun onNewIntent(intent: Intent) {
