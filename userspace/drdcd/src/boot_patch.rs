@@ -215,7 +215,16 @@ mod android {
             }
         }
         blk.write_all(data).context("flash boot failed")?;
-        blk.sync_all().context("sync boot failed")?;
+        // fsync() on a block device is not supported by every kernel/driver combo and may
+        // return EINVAL even though the image was written. Retry with sync() and, if that
+        // also fails, keep going: failing here would report a flash error for a good image.
+        if let Err(e) = blk.sync_all() {
+            log::warn!("sync_all on {partition} failed: {e}; falling back to sync()");
+            #[cfg(target_os = "android")]
+            unsafe {
+                libc::sync();
+            }
+        }
         Ok(())
     }
 
