@@ -9,7 +9,7 @@ use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
 use crate::lkm_image::BootPatchV2Args;
 use crate::module::regenerate_preinit;
 use crate::{
-    apk_sign, assets, debug, defs, init_event, drdc_uapi, drdccalls, module, module_config, sulog,
+    apk_sign, assets, debug, defs, drdc_uapi, drdccalls, init_event, module, module_config, sulog,
     utils,
 };
 

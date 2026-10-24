@@ -19,9 +19,8 @@ use rustix::{
 };
 
 use crate::{
-    assets, defs,
+    assets, defs, drdccalls,
     init_event::{on_boot_completed, on_post_fs_data, on_services, run_stage},
-    drdccalls,
     module::ScriptWait,
     utils::{self, switch_mnt_ns},
 };

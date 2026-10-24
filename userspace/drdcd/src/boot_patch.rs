@@ -1026,10 +1026,7 @@ pub fn restore(args: BootRestoreArgs) -> Result<()> {
             bail!("No compatible ramdisk found.")
         };
 
-    ensure!(
-        cpio.exists("drdc.ko"),
-        "boot image is not patched by DRDC"
-    );
+    ensure!(cpio.exists("drdc.ko"), "boot image is not patched by DRDC");
 
     #[cfg(target_os = "android")]
     let mut stock_boot: Option<PathBuf> = None;

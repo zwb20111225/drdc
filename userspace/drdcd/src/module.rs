@@ -1,7 +1,7 @@
 #[allow(clippy::wildcard_imports)]
 use crate::utils::*;
 use crate::{
-    assets, defs, hot_install, drdccalls, metamodule,
+    assets, defs, drdccalls, hot_install, metamodule,
     restorecon::{restore_syscon, setsyscon},
     sepolicy,
 };

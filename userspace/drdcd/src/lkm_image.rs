@@ -2767,7 +2767,8 @@ mod tests {
             .filter(|symbol| symbol.section_index == SHN_UNDEF && !symbol.name.is_empty())
             .enumerate()
         {
-            let value = if symbol.name.starts_with("drdc_ext_") || symbol.name == "drdc_image_base" {
+            let value = if symbol.name.starts_with("drdc_ext_") || symbol.name == "drdc_image_base"
+            {
                 image_base + 0x10_000 + index as u64 * 0x100
             } else {
                 index as u64 + 1
