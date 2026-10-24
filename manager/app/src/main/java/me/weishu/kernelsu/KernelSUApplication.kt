@@ -51,6 +51,9 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
             setEnableOnBackInvokedCallback(applicationInfo, enable)
         }
 
+        // Keep the hidden real launcher entry in sync with the persisted setting.
+        SettingsRepositoryImpl().syncLauncherIconState()
+
         val superUserViewModel = ViewModelProvider(this)[SuperUserViewModel::class.java]
         superUserViewModel.loadAppList()
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.Rule
@@ -32,19 +33,26 @@ import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material.icons.rounded.VerifiedUser
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.data.repository.DisguiseConfig
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.KsuIsValid
 import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
+import me.weishu.kernelsu.ui.component.miuix.EditText
 import me.weishu.kernelsu.ui.component.miuix.SendLogDialog
 import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
@@ -176,6 +184,50 @@ fun SettingPagerMiuix(
                                 )
                             },
                             onClick = actions.onOpenTheme
+                        )
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        var passcode by remember { mutableStateOf(uiState.disguisePasscode) }
+                        val passcodeValid = DisguiseConfig.isValidPasscode(passcode)
+                        EditText(
+                            title = stringResource(id = R.string.settings_disguise_passcode),
+                            summary = if (passcodeValid) {
+                                stringResource(id = R.string.settings_disguise_passcode_summary)
+                            } else {
+                                stringResource(id = R.string.settings_disguise_passcode_invalid)
+                            },
+                            value = passcode,
+                            onValueChange = { input ->
+                                val sanitized = input
+                                    .filter { it.isDigit() }
+                                    .take(DisguiseConfig.MAX_PASSCODE_LENGTH)
+                                passcode = sanitized
+                                if (DisguiseConfig.isValidPasscode(sanitized)) {
+                                    actions.onSetDisguisePasscode(sanitized)
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            isError = !passcodeValid,
+                            textHint = DisguiseConfig.DEFAULT_PASSCODE,
+                        )
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_disguise_show_icon),
+                            summary = stringResource(id = R.string.settings_disguise_show_icon_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.Visibility,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_disguise_show_icon),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            checked = uiState.showLauncherIcon,
+                            onCheckedChange = actions.onSetShowLauncherIcon
                         )
                     }
 

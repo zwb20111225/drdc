@@ -3,6 +3,7 @@ package me.weishu.kernelsu.ui.screen.settings
 import androidx.compose.runtime.Immutable
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
+import me.weishu.kernelsu.data.repository.DisguiseConfig
 import me.weishu.kernelsu.ui.UiMode
 
 @Immutable
@@ -61,7 +62,11 @@ data class SettingsUiState(
     val autoJailbreak: Boolean = false,
 
     // Soft Reboot
-    val useSoftReboot: Boolean = false
+    val useSoftReboot: Boolean = false,
+
+    // Disguise
+    val disguisePasscode: String = DisguiseConfig.DEFAULT_PASSCODE,
+    val showLauncherIcon: Boolean = false
 )
 
 @Immutable
@@ -81,5 +86,7 @@ data class SettingsScreenActions(
     val onSetEnableWebDebugging: (Boolean) -> Unit,
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
+    val onSetDisguisePasscode: (String) -> Unit,
+    val onSetShowLauncherIcon: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,
 )

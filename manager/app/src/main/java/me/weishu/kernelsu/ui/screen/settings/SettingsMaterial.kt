@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
@@ -25,15 +27,19 @@ import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LayersClear
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
@@ -46,11 +52,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.data.repository.DisguiseConfig
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.KsuIsValid
+import me.weishu.kernelsu.ui.component.material.ExpressiveDialog
 import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
@@ -75,11 +84,23 @@ fun SettingPagerMaterial(
     val snackBarHost = remember { SnackbarHostState() }
     val showUninstallDialog = rememberSaveable { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showPasscodeDialog by rememberSaveable { mutableStateOf(false) }
 
     UninstallDialog(
         show = showUninstallDialog.value,
         onDismissRequest = { showUninstallDialog.value = false }
     )
+
+    if (showPasscodeDialog) {
+        DisguisePasscodeDialog(
+            initialPasscode = uiState.disguisePasscode,
+            onDismiss = { showPasscodeDialog = false },
+            onConfirm = { passcode ->
+                actions.onSetDisguisePasscode(passcode)
+                showPasscodeDialog = false
+            },
+        )
+    }
 
     ExpressiveScaffold(
         topBar = {
@@ -148,6 +169,33 @@ fun SettingPagerMaterial(
                         )
                     }
                 }
+            )
+
+            SegmentedColumn(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                content = listOf(
+                    {
+                        val passcode = stringResource(id = R.string.settings_disguise_passcode)
+                        SegmentedListItem(
+                            onClick = { showPasscodeDialog = true },
+                            headlineContent = { Text(passcode) },
+                            supportingContent = {
+                                Text(stringResource(id = R.string.settings_disguise_passcode_summary))
+                            },
+                            leadingContent = { Icon(Icons.Filled.Password, passcode) },
+                            trailingContent = { Text(uiState.disguisePasscode) },
+                        )
+                    },
+                    {
+                        SegmentedSwitchItem(
+                            icon = Icons.Filled.Visibility,
+                            title = stringResource(id = R.string.settings_disguise_show_icon),
+                            summary = stringResource(id = R.string.settings_disguise_show_icon_summary),
+                            checked = uiState.showLauncherIcon,
+                            onCheckedChange = actions.onSetShowLauncherIcon,
+                        )
+                    }
+                )
             )
 
             val profileTemplate = stringResource(id = R.string.settings_profile_template)
@@ -395,5 +443,56 @@ private fun TopBar(
         colors = expressiveTopAppBarColors(),
         windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         scrollBehavior = scrollBehavior
+    )
+}
+
+@Composable
+private fun DisguisePasscodeDialog(
+    initialPasscode: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var value by remember(initialPasscode) { mutableStateOf(initialPasscode) }
+    val isValid = DisguiseConfig.isValidPasscode(value)
+
+    ExpressiveDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.settings_disguise_passcode)) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { input ->
+                    value = input
+                        .filter { it.isDigit() }
+                        .take(DisguiseConfig.MAX_PASSCODE_LENGTH)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = !isValid,
+                supportingText = {
+                    Text(
+                        if (isValid) {
+                            stringResource(id = R.string.settings_disguise_passcode_summary)
+                        } else {
+                            stringResource(id = R.string.settings_disguise_passcode_invalid)
+                        }
+                    )
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(value) },
+                enabled = isValid,
+            ) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
     )
 }

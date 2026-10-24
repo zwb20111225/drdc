@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.edit
+import androidx.core.content.pm.ShortcutManagerCompat
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.topjohnwu.superuser.ShellUtils
@@ -168,6 +169,55 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var useSoftReboot: Boolean
         get() = prefs.getBoolean(KEY_USE_SOFT_REBOOT, false)
         set(value) = prefs.edit { putBoolean(KEY_USE_SOFT_REBOOT, value) }
+
+    override var disguisePasscode: String
+        get() = prefs.getString(DisguiseConfig.KEY_DISGUISE_PASSCODE, null)
+            ?.takeIf { DisguiseConfig.isValidPasscode(it) }
+            ?: DisguiseConfig.DEFAULT_PASSCODE
+        set(value) = prefs.edit { putString(DisguiseConfig.KEY_DISGUISE_PASSCODE, value) }
+
+    override var showLauncherIcon: Boolean
+        get() = prefs.getBoolean(DisguiseConfig.KEY_SHOW_LAUNCHER_ICON, false)
+        set(value) {
+            prefs.edit { putBoolean(DisguiseConfig.KEY_SHOW_LAUNCHER_ICON, value) }
+            applyLauncherIconState(value)
+        }
+
+    /** Re-applies the persisted alias state; called when the application starts. */
+    fun syncLauncherIconState() = applyLauncherIconState(showLauncherIcon)
+
+    private fun applyLauncherIconState(enabled: Boolean) {
+        runCatching {
+            val component = ComponentName(ksuApp, DisguiseConfig.WINTER_ALIAS)
+            val desired = if (enabled) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
+            if (ksuApp.packageManager.getComponentEnabledSetting(component) != desired) {
+                ksuApp.packageManager.setComponentEnabledSetting(
+                    component,
+                    desired,
+                    PackageManager.DONT_KILL_APP
+                )
+            }
+        }.onFailure {
+            Log.e("Settings", "failed to change Winter alias state to $enabled", it)
+        }
+
+        if (!enabled) {
+            // Dynamic shortcuts show up in the launcher's long-press menu; clear them so the
+            // calculator icon cannot be used to discover the manager. Pinned shortcuts are
+            // explicit user actions and are intentionally kept.
+            runCatching {
+                if (ShortcutManagerCompat.getDynamicShortcuts(ksuApp).isNotEmpty()) {
+                    ShortcutManagerCompat.removeAllDynamicShortcuts(ksuApp)
+                }
+            }.onFailure {
+                Log.e("Settings", "failed to clear dynamic shortcuts", it)
+            }
+        }
+    }
 
     override val intentToken: String
         get() {

@@ -385,4 +385,11 @@
     <string name="terminal_placeholder">交互式终端将在后续里程碑提供。</string>
     <string name="keys_title">密钥</string>
     <string name="keys_placeholder">卡密激活将在后续里程碑提供。</string>
+    <string name="calculator_label">计算器</string>
+    <string name="calculator_error">错误</string>
+    <string name="settings_disguise_passcode">解锁口令</string>
+    <string name="settings_disguise_passcode_summary">在计算器输入口令后按 = 进入冬日渡川。</string>
+    <string name="settings_disguise_passcode_invalid">请输入 4-12 位数字，且不能以 0 开头。</string>
+    <string name="settings_disguise_show_icon">显示桌面图标</string>
+    <string name="settings_disguise_show_icon_summary">在桌面同时显示冬日渡川入口。</string>
 </resources>

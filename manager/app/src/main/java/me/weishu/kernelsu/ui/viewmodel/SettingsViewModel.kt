@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.data.repository.DisguiseConfig
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
@@ -90,6 +91,8 @@ class SettingsViewModel(
             val uiMode = repo.uiMode
             val autoJailbreak = repo.autoJailbreak
             val useSoftReboot = repo.useSoftReboot
+            val disguisePasscode = repo.disguisePasscode
+            val showLauncherIcon = repo.showLauncherIcon
             val isLateLoadMode = Natives.isLateLoadMode
 
             _uiState.update {
@@ -129,6 +132,8 @@ class SettingsViewModel(
                     isLkmMode = isLkmMode,
                     autoJailbreak = autoJailbreak,
                     useSoftReboot = useSoftReboot,
+                    disguisePasscode = disguisePasscode,
+                    showLauncherIcon = showLauncherIcon,
                     isLateLoadMode = isLateLoadMode,
                 )
             }
@@ -337,6 +342,20 @@ class SettingsViewModel(
     fun setUseSoftReboot(enabled: Boolean) {
         repo.useSoftReboot = enabled
         _uiState.update { it.copy(useSoftReboot = enabled) }
+    }
+
+    fun setDisguisePasscode(passcode: String) {
+        val sanitized = passcode
+            .filter { it.isDigit() }
+            .take(DisguiseConfig.MAX_PASSCODE_LENGTH)
+        if (!DisguiseConfig.isValidPasscode(sanitized)) return
+        repo.disguisePasscode = sanitized
+        _uiState.update { it.copy(disguisePasscode = sanitized) }
+    }
+
+    fun setShowLauncherIcon(enabled: Boolean) {
+        repo.showLauncherIcon = enabled
+        _uiState.update { it.copy(showLauncherIcon = enabled) }
     }
 
     fun setSulogEnabled(enabled: Boolean) {

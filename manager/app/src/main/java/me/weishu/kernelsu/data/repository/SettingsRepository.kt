@@ -30,6 +30,12 @@ interface SettingsRepository {
     var suLogFilters: Set<String>?
     var autoJailbreak: Boolean
     var useSoftReboot: Boolean
+
+    /** Unlock code typed in the disguised calculator to open the manager. */
+    var disguisePasscode: String
+
+    /** Whether the real launcher entry (`WinterAlias`) is visible. */
+    var showLauncherIcon: Boolean
     val intentToken: String
 
     suspend fun getSuCompatStatus(): String
