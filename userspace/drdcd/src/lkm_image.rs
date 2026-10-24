@@ -23,7 +23,7 @@ use crate::{assets, boot_patch};
 const ARM64_IMAGE_MAGIC_OFFSET: usize = 0x38;
 const ARM64_IMAGE_MAGIC: &[u8; 4] = b"ARM\x64";
 const ARM64_IMAGE_SIZE_OFFSET: usize = 0x10;
-const CAPSULE_MAGIC: &[u8; 8] = b"DRDCLKM1\0";
+const CAPSULE_MAGIC: &[u8; 8] = b"DRDCLKM1";
 const CAPSULE_VERSION: u32 = 2;
 const CAPSULE_ALIGNMENT: usize = 4096;
 const CAPSULE_HEADER_SIZE: usize = 112;
