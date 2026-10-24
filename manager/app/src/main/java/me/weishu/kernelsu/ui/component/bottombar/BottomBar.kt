@@ -92,14 +92,10 @@ internal enum class BadgeTone { Alert, Accent }
 internal data class NavBadge(val count: Int, val tone: BadgeTone)
 
 internal fun badgeFor(index: Int, state: NavigationBadgeState): NavBadge? = when (index) {
-    BottomBarDestination.SuperUser.ordinal ->
-        state.superuserCount.takeIf { it > 0 }?.let { NavBadge(it, BadgeTone.Accent) }
-
-    BottomBarDestination.Module.ordinal -> when {
-        state.moduleUpdatableCount > 0 -> NavBadge(state.moduleUpdatableCount, BadgeTone.Alert)
-        state.moduleEnabledCount > 0 -> NavBadge(state.moduleEnabledCount, BadgeTone.Accent)
-        else -> null
-    }
+    // Module updates are the only cross-tab signal on the new five-tab bar; the
+    // superuser / module tabs are gone, so surface pending updates on the ice tab.
+    BottomBarDestination.Ice.ordinal ->
+        state.moduleUpdatableCount.takeIf { it > 0 }?.let { NavBadge(it, BadgeTone.Alert) }
 
     else -> null
 }

@@ -28,6 +28,7 @@ import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.navigation3.Navigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.viewmodel.HomeViewModel
+import me.weishu.kernelsu.ui.viewmodel.MainPagerConfig
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -35,6 +36,7 @@ fun HomePager(
     navigator: Navigator,
     bottomInnerPadding: Dp,
     isCurrentPage: Boolean = true,
+    onSwitchPage: (Int) -> Unit = {},
 ) {
     val viewModel = viewModel<HomeViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,6 +79,10 @@ fun HomePager(
                 }
             }
         },
+        onOpenModule = { navigator.push(Route.Module) },
+        onOpenSuperUser = { navigator.push(Route.SuperUser) },
+        onOpenTerminal = { onSwitchPage(MainPagerConfig.PAGE_TERMINAL) },
+        onOpenFiles = { onSwitchPage(MainPagerConfig.PAGE_FILES) },
     )
 
     when (LocalUiMode.current) {

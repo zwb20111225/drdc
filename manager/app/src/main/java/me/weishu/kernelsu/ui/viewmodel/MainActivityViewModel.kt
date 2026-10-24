@@ -89,8 +89,14 @@ private class MainPageState(
 }
 
 object MainPagerConfig {
-    const val PAGE_COUNT = 4
+    const val PAGE_COUNT = 5
     const val LAST_PAGE_INDEX = PAGE_COUNT - 1
+
+    const val PAGE_ICE = 0
+    const val PAGE_FILES = 1
+    const val PAGE_TERMINAL = 2
+    const val PAGE_KEYS = 3
+    const val PAGE_SETTINGS = 4
 
     fun coercePage(page: Int): Int = page.coerceIn(0, LAST_PAGE_INDEX)
 }

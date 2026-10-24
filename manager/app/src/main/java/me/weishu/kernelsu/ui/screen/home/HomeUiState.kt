@@ -64,4 +64,8 @@ data class HomeActions(
     val onInstallClick: () -> Unit,
     val onOpenUrl: (String) -> Unit,
     val onJailbreakClick: () -> Unit = {},
+    val onOpenModule: () -> Unit = {},
+    val onOpenSuperUser: () -> Unit = {},
+    val onOpenTerminal: () -> Unit = {},
+    val onOpenFiles: () -> Unit = {},
 )

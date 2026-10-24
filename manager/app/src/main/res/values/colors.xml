@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFFFF</color>
-    <color name="ic_launcher_foreground">#FF1E110D</color>
-    <color name="ic_splash_background">#FFF5F5F5</color>
+    <!-- 冬日渡川 · 冰面配色 -->
+    <color name="window_background">#FF0B111B</color>
+    <color name="ic_splash_background">#FF2E6FA3</color>
 </resources>

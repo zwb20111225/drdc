@@ -26,7 +26,7 @@ fun ColorScheme.amoledBackground(amoled: Boolean): ColorScheme =
     )
 
 @Composable
-fun rememberKernelSUColorScheme(
+fun rememberDRDCColorScheme(
     seedColor: Color,
     isDark: Boolean,
     isAmoled: Boolean,

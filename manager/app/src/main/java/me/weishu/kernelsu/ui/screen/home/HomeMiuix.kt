@@ -5,10 +5,13 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,35 +24,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DeveloperBoard
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Tag
-import androidx.compose.material.icons.filled.VolunteerActivism
-import androidx.compose.material.icons.rounded.CheckCircleOutline
-import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,14 +73,11 @@ import me.weishu.kernelsu.ui.component.miuix.WarningCard
 import me.weishu.kernelsu.ui.component.rebootlistpopup.RebootListPopupMiuix
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
-import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -80,10 +87,8 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -163,16 +168,13 @@ fun HomePagerMiuix(
                         if (state.showRootWarning) {
                             WarningCard(stringResource(id = R.string.grant_root_failed))
                         }
-                        StatusCard(
+                        HeroCard(
                             state = state,
                             actions = actions,
                         )
+                        HomeTiles(actions = actions)
                         InfoCard(
                             systemInfo = state.systemInfo,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        SupportLinks(
-                            onOpenUrl = actions.onOpenUrl,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         Spacer(
@@ -241,232 +243,348 @@ private fun TopBar(
 }
 
 @Composable
-private fun StatusCard(
+private fun HeroCard(
     state: HomeUiState,
     actions: HomeActions,
 ) {
-    Column {
-        when {
-            state.ksuVersion != null -> {
-                val workingState = buildString {
-                    if (state.isSafeMode) {
-                        append(" [${stringResource(id = R.string.safe_mode)}]")
-                    }
-                    if (state.isLateLoadMode) {
-                        append(" [${stringResource(id = R.string.jailbreak_mode)}]")
-                    }
-                }
-                val workingMode = when (state.lkmMode) {
-                    null -> null
-                    true -> "LKM"
-                    else -> "GKI"
-                }
-                val workingText = "${stringResource(id = R.string.home_working)}$workingState"
+    val connected = state.ksuVersion != null
+    val isGki = state.kernelVersion.isGKI()
+    val notInstalled = !connected && isGki
+    val canTap = !state.isLateLoadMode
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.defaultColors(
-                            color = when {
-                                isDynamicColor -> colorScheme.secondaryContainer
-                                isInDarkTheme() -> Color(0xFF1A3825)
-                                else -> Color(0xFFDFFAE4)
-                            }
-                        ),
-                        onClick = {
-                            if (!state.isLateLoadMode) {
-                                actions.onInstallClick()
-                            }
-                        },
-                        showIndication = !state.isLateLoadMode,
-                        pressFeedbackType = PressFeedbackType.Tilt
-                    ) {
-                        Box {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .offset(27.dp, 31.dp),
-                                contentAlignment = Alignment.BottomEnd
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(110.dp),
-                                    imageVector = Icons.Rounded.CheckCircleOutline,
-                                    tint = if (isDynamicColor) {
-                                        colorScheme.primary.copy(alpha = 0.8f)
-                                    } else {
-                                        Color(0xFF36D167)
-                                    },
-                                    contentDescription = null
-                                )
-                            }
-                            if (workingMode != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp, 10.dp),
-                                    contentAlignment = Alignment.BottomStart,
-                                ) {
-                                    Text(
-                                        text = workingMode,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Medium,
-                                    )
-                                }
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp, 14.dp),
-                                contentAlignment = Alignment.TopStart,
-                            ) {
-                                Column {
-                                    Text(
-                                        text = workingText,
-                                        fontSize = 22.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                    )
-                                    Spacer(Modifier.height(1.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = stringResource(
-                                                R.string.home_working_version,
-                                                "${state.ksuVersion}-${state.kernelUAPIVersion}"
-                                            ),
-                                            modifier = Modifier.weight(1f, fill = false),
-                                            fontSize = 15.sp,
-                                        )
-                                        if (state.showCustomLkmBadge) {
-                                            Spacer(Modifier.width(8.dp))
-                                            StatusTag(
-                                                label = stringResource(R.string.home_lkm_custom),
-                                                contentColor = if (isDynamicColor) {
-                                                    colorScheme.onTertiaryContainer
-                                                } else if (isInDarkTheme()) {
-                                                    Color(0xFFB8E8C5)
-                                                } else {
-                                                    Color(0xFF164A29)
-                                                },
-                                                backgroundColor = if (isDynamicColor) {
-                                                    colorScheme.tertiaryContainer
-                                                } else if (isInDarkTheme()) {
-                                                    Color(0xFF315D3E)
-                                                } else {
-                                                    Color(0xFFB8E8C5)
-                                                },
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            state.kernelVersion.isGKI() -> {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            if (!state.isLateLoadMode) {
-                                actions.onInstallClick()
-                            }
-                        },
-                        showIndication = !state.isLateLoadMode,
-                        pressFeedbackType = PressFeedbackType.Tilt
-                    ) {
-                        BasicComponent(
-                            title = stringResource(R.string.home_not_installed),
-                            summary = stringResource(R.string.home_click_to_install),
-                            startAction = {
-                                Icon(
-                                    Icons.Rounded.ErrorOutline,
-                                    stringResource(R.string.home_not_installed),
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    tint = colorScheme.onBackground,
-                                )
-                            },
-                            endActions = {
-                                if (state.isSELinuxPermissive) {
-                                    TextButton(
-                                        text = stringResource(R.string.home_jailbreak),
-                                        onClick = actions.onJailbreakClick,
-                                        colors = ButtonDefaults.textButtonColorsPrimary()
-                                    )
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-
-            else -> {
-                Card(
-                    onClick = {
-                        if (!state.isLateLoadMode) {
-                            actions.onInstallClick()
-                        }
-                    },
-                    showIndication = !state.isLateLoadMode,
-                    pressFeedbackType = PressFeedbackType.Tilt
-                ) {
-                    BasicComponent(
-                        title = stringResource(R.string.home_unsupported),
-                        summary = stringResource(R.string.home_unsupported_reason),
-                        startAction = {
-                            Icon(
-                                Icons.Rounded.ErrorOutline,
-                                stringResource(R.string.home_unsupported),
-                                modifier = Modifier.padding(end = 16.dp),
-                                tint = colorScheme.onBackground,
-                            )
-                        }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { if (canTap) actions.onInstallClick() },
+        showIndication = canTap,
+        pressFeedbackType = PressFeedbackType.Tilt,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Seal(size = 30.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = stringResource(
+                        R.string.home_brand_subtitle,
+                        state.systemInfo.kernelVersion.substringBefore("-")
+                    ),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 10.5.sp,
+                    color = colorScheme.onSurfaceVariantSummary,
+                )
+                val mode = workingMode(state)
+                if (connected && mode != null) {
+                    StatusTag(
+                        label = mode,
+                        contentColor = colorScheme.onPrimaryContainer,
+                        backgroundColor = colorScheme.primaryContainer,
                     )
                 }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                HeroRing(state = state)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(1.dp, colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_bubble),
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        color = colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(76.dp)
+                        .rotate(-7f),
+                )
+            }
+
+            val tags = buildList {
+                if (connected && state.isSafeMode) add(stringResource(R.string.safe_mode) to true)
+                if (connected && state.isLateLoadMode) add(stringResource(R.string.jailbreak_mode) to true)
+                if (state.showCustomLkmBadge) add(stringResource(R.string.home_lkm_custom) to false)
+            }
+            if (tags.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    tags.forEach { (label, isAlert) ->
+                        if (isAlert) {
+                            StatusTag(
+                                label = label,
+                                contentColor = colorScheme.onErrorContainer,
+                                backgroundColor = colorScheme.errorContainer,
+                            )
+                        } else {
+                            StatusTag(
+                                label = label,
+                                contentColor = colorScheme.onTertiaryContainer,
+                                backgroundColor = colorScheme.tertiaryContainer,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (notInstalled && state.isSELinuxPermissive) {
+                TextButton(
+                    text = stringResource(R.string.home_jailbreak),
+                    onClick = actions.onJailbreakClick,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HeroStat(
+                    value = state.systemInfo.managerVersion.substringBefore(" "),
+                    label = stringResource(R.string.home_stat_manager),
+                    modifier = Modifier.weight(1f),
+                )
+                StatDivider()
+                HeroStat(
+                    value = state.systemInfo.deviceModel,
+                    label = stringResource(R.string.home_stat_device),
+                    modifier = Modifier.weight(1f),
+                )
+                StatDivider()
+                HeroStat(
+                    value = selinuxDisplay(state.systemInfo.selinuxStatus),
+                    label = stringResource(R.string.home_stat_selinux),
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SupportLinks(
-    onOpenUrl: (String) -> Unit,
+private fun HeroRing(state: HomeUiState) {
+    val connected = state.ksuVersion != null
+    val isGki = state.kernelVersion.isGKI()
+    val valueText = when {
+        connected -> stringResource(R.string.home_status_connected)
+        isGki -> stringResource(R.string.home_not_installed)
+        else -> stringResource(R.string.home_unsupported)
+    }
+    val mode = workingMode(state)
+    val subText = when {
+        connected && mode != null -> "drdc ${state.systemInfo.managerVersion.substringBefore(" ")} · $mode"
+        connected -> "drdc ${state.systemInfo.managerVersion.substringBefore(" ")}"
+        isGki -> "${state.systemInfo.kernelVersion.substringBefore("-")} · GKI"
+        else -> state.systemInfo.kernelVersion.substringBefore("-")
+    }
+    val accent = if (connected) colorScheme.primary else colorScheme.error
+    val track = colorScheme.onSurface.copy(alpha = 0.10f)
+
+    Box(modifier = Modifier.size(164.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = 9.dp.toPx()
+            val diameter = size.minDimension - stroke
+            val arcTopLeft = Offset(stroke / 2f, stroke / 2f)
+            val arcSize = Size(diameter, diameter)
+            drawArc(
+                color = track,
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                topLeft = arcTopLeft,
+                size = arcSize,
+                style = Stroke(width = stroke),
+            )
+            drawArc(
+                color = accent,
+                startAngle = -90f,
+                sweepAngle = if (connected) 360f else 110f,
+                useCenter = false,
+                topLeft = arcTopLeft,
+                size = arcSize,
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = stringResource(R.string.home_status_title),
+                fontSize = 11.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+            Text(
+                text = valueText,
+                modifier = Modifier.padding(vertical = 3.dp),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = accent,
+            )
+            Text(
+                text = subText,
+                fontSize = 10.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroStat(
+    value: String,
+    label: String,
     modifier: Modifier = Modifier,
 ) {
-    val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = label,
+            modifier = Modifier.padding(top = 3.dp),
+            fontSize = 10.sp,
+            color = colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
 
-    Card(modifier = modifier) {
-        ArrowPreference(
-            title = stringResource(R.string.home_support_title),
-            summary = stringResource(R.string.home_support_content),
-            startAction = {
-                Icon(
-                    imageVector = Icons.Filled.VolunteerActivism,
-                    contentDescription = stringResource(R.string.home_support_title),
-                    modifier = Modifier.padding(end = 6.dp),
-                    tint = colorScheme.onBackground,
-                )
-            },
-            onClick = { onOpenUrl("https://patreon.com/weishu") },
+@Composable
+private fun StatDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(26.dp)
+            .background(colorScheme.outline.copy(alpha = 0.3f)),
+    )
+}
+
+@Composable
+private fun Seal(size: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(colorScheme.primary, RoundedCornerShape(size * 0.32f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.app_seal),
+            fontSize = (size.value * 0.46f).sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = colorScheme.onPrimary,
         )
-        ArrowPreference(
-            title = stringResource(R.string.home_learn_kernelsu),
-            summary = stringResource(R.string.home_click_to_learn_kernelsu),
-            startAction = {
+    }
+}
+
+@Composable
+private fun HomeTiles(actions: HomeActions) {
+    Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            HomeTile(
+                icon = Icons.Rounded.Extension,
+                title = stringResource(R.string.module),
+                summary = stringResource(R.string.home_tile_module_desc),
+                onClick = actions.onOpenModule,
+                modifier = Modifier.weight(1f),
+            )
+            HomeTile(
+                icon = Icons.Rounded.Security,
+                title = stringResource(R.string.superuser),
+                summary = stringResource(R.string.home_tile_superuser_desc),
+                onClick = actions.onOpenSuperUser,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            HomeTile(
+                icon = Icons.Rounded.Terminal,
+                title = stringResource(R.string.tab_terminal),
+                summary = stringResource(R.string.home_tile_terminal_desc),
+                onClick = actions.onOpenTerminal,
+                modifier = Modifier.weight(1f),
+            )
+            HomeTile(
+                icon = Icons.Rounded.Folder,
+                title = stringResource(R.string.tab_files),
+                summary = stringResource(R.string.home_tile_files_desc),
+                onClick = actions.onOpenFiles,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeTile(
+    icon: ImageVector,
+    title: String,
+    summary: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier, onClick = onClick) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(colorScheme.primary.copy(alpha = 0.12f), RoundedCornerShape(11.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = stringResource(R.string.home_learn_kernelsu),
-                    modifier = Modifier.padding(end = 6.dp),
-                    tint = colorScheme.onBackground,
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(19.dp),
                 )
-            },
-            onClick = { onOpenUrl(learnMoreUrl) },
-        )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = summary,
+                    modifier = Modifier.padding(top = 3.dp),
+                    fontSize = 10.sp,
+                    color = colorScheme.onSurfaceVariantSummary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
@@ -513,12 +631,6 @@ private fun InfoCard(
         }
     }
 
-    val selinuxDisplay = when (systemInfo.selinuxStatus) {
-        "Enforcing" -> stringResource(R.string.selinux_status_enforcing)
-        "Permissive" -> stringResource(R.string.selinux_status_permissive)
-        "Disabled" -> stringResource(R.string.selinux_status_disabled)
-        else -> stringResource(R.string.selinux_status_unknown)
-    }
     val seccompDisplay = when (systemInfo.seccompStatus) {
         -1 -> stringResource(R.string.seccomp_status_not_supported)
         0 -> stringResource(R.string.seccomp_status_disabled)
@@ -561,7 +673,7 @@ private fun InfoCard(
                 InfoText(
                     icon = Icons.Filled.Security,
                     title = stringResource(R.string.home_selinux_status),
-                    content = selinuxDisplay,
+                    content = selinuxDisplay(systemInfo.selinuxStatus),
                 )
                 InfoText(
                     icon = Icons.Filled.FilterList,
@@ -574,37 +686,42 @@ private fun InfoCard(
     }
 }
 
-@Preview(name = "Activated")
-@Composable
-private fun StatusCardActivatedPreview() {
-    StatusCard(
-        state = previewHomeScreenState(ksuVersion = 12345, lkmMode = true),
-        actions = HomeActions({}, {})
-    )
+private fun workingMode(state: HomeUiState): String? = when (state.lkmMode) {
+    null -> null
+    true -> "LKM"
+    false -> "GKI"
 }
 
-@Preview(name = "Not Activated")
 @Composable
-private fun StatusCardNotActivatedPreview() {
-    StatusCard(state = previewHomeScreenState(ksuVersion = null, lkmMode = null), actions = HomeActions({}, {}))
+private fun selinuxDisplay(status: String): String = when (status) {
+    "Enforcing" -> stringResource(R.string.selinux_status_enforcing)
+    "Permissive" -> stringResource(R.string.selinux_status_permissive)
+    "Disabled" -> stringResource(R.string.selinux_status_disabled)
+    else -> stringResource(R.string.selinux_status_unknown)
 }
 
-@Preview(name = "Permissive")
+@Preview(name = "Home Activated", showBackground = true)
 @Composable
-private fun StatusCardPermissivePreview() {
-    StatusCard(
-        state = previewHomeScreenState(ksuVersion = null, lkmMode = null, selinuxStatus = "Permissive"),
-        actions = HomeActions({}, {})
-    )
+private fun HomeScreenActivatedPreview() {
+    HomeScreenPreviewContent(ksuVersion = 12345, lkmMode = true)
 }
 
-@Preview(name = "Jailbreak")
+@Preview(name = "Home Not Activated", showBackground = true)
 @Composable
-private fun StatusCardJailbreakPreview() {
-    StatusCard(
-        state = previewHomeScreenState(ksuVersion = 12345, lkmMode = true, isLateLoadMode = true),
-        actions = HomeActions({}, {})
-    )
+private fun HomeScreenNotActivatedPreview() {
+    HomeScreenPreviewContent(ksuVersion = null, lkmMode = null)
+}
+
+@Preview(name = "Home Permissive", showBackground = true)
+@Composable
+private fun HomeScreenPermissivePreview() {
+    HomeScreenPreviewContent(ksuVersion = null, lkmMode = null, selinuxStatus = "Permissive")
+}
+
+@Preview(name = "Home Jailbreak", showBackground = true)
+@Composable
+private fun HomeScreenJailbreakPreview() {
+    HomeScreenPreviewContent(ksuVersion = 12345, lkmMode = true, isLateLoadMode = true)
 }
 
 private val previewSystemInfo = SystemInfo(
@@ -631,11 +748,10 @@ private fun HomeScreenPreviewContent(
     CompositionLocalProvider(LocalUriHandler provides previewUriHandler) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             val actions = HomeActions({}, {})
-            StatusCard(
+            HeroCard(
                 state = previewHomeScreenState(
                     ksuVersion = ksuVersion,
                     lkmMode = lkmMode,
@@ -643,42 +759,15 @@ private fun HomeScreenPreviewContent(
                     isLateLoadMode = isLateLoadMode,
                     selinuxStatus = selinuxStatus,
                 ),
-                actions = actions
+                actions = actions,
             )
+            HomeTiles(actions = actions)
             InfoCard(
                 systemInfo = previewSystemInfo.copy(selinuxStatus = selinuxStatus),
                 modifier = Modifier.fillMaxWidth(),
             )
-            SupportLinks(
-                onOpenUrl = {},
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
-}
-
-@Preview(name = "Home Activated", showBackground = true)
-@Composable
-private fun HomeScreenActivatedPreview() {
-    HomeScreenPreviewContent(ksuVersion = 12345, lkmMode = true)
-}
-
-@Preview(name = "Home Not Activated", showBackground = true)
-@Composable
-private fun HomeScreenNotActivatedPreview() {
-    HomeScreenPreviewContent(ksuVersion = null, lkmMode = null)
-}
-
-@Preview(name = "Home Permissive", showBackground = true)
-@Composable
-private fun HomeScreenPermissivePreview() {
-    HomeScreenPreviewContent(ksuVersion = null, lkmMode = null, selinuxStatus = "Permissive")
-}
-
-@Preview(name = "Home Jailbreak", showBackground = true)
-@Composable
-private fun HomeScreenJailbreakPreview() {
-    HomeScreenPreviewContent(ksuVersion = 12345, lkmMode = true, isLateLoadMode = true)
 }
 
 private fun previewHomeScreenState(

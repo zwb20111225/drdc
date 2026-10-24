@@ -51,9 +51,12 @@ internal suspend fun isDownloadAvailable(uri: Uri): Boolean = withContext(Dispat
     }.getOrDefault(false)
 }
 
+// TODO(DRDC): point this to your own release repository before publishing.
+private const val DRDC_RELEASE_REPO = "OWNER/REPO"
+
 fun checkNewVersion(): LatestVersionInfo {
     if (!isNetworkAvailable(ksuApp)) return LatestVersionInfo()
-    val url = "https://api.github.com/repos/tiann/KernelSU/releases/latest"
+    val url = "https://api.github.com/repos/$DRDC_RELEASE_REPO/releases/latest"
     // default null value if failed
     val defaultValue = LatestVersionInfo()
     runCatching {
