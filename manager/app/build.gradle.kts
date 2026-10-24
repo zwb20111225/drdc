@@ -155,10 +155,10 @@ android {
         // (or the DRDC_KEY_SERVER_URL / DRDC_KEY_APP_SECRET environment variables).
         val keyServerUrl = (findProperty("drdcKeyServerUrl") as String?)
             ?: System.getenv("DRDC_KEY_SERVER_URL")
-            ?: "http://192.168.2.101:8080"
+            ?: "https://899788drdc.xyz"
         val keyAppSecret = (findProperty("drdcKeyAppSecret") as String?)
             ?: System.getenv("DRDC_KEY_APP_SECRET")
-            ?: "dev-app-secret-0123456789"
+            ?: "442defef50ae50b9fbc040befcdabee26fd40984742783fb"
         buildConfigField("String", "KEY_SERVER_URL", "\"$keyServerUrl\"")
         buildConfigField("String", "KEY_APP_SECRET", "\"$keyAppSecret\"")
 
