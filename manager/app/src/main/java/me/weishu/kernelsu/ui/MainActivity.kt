@@ -1,9 +1,13 @@
 package me.weishu.kernelsu.ui
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -39,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
@@ -57,7 +62,9 @@ import me.weishu.kernelsu.ui.component.bottombar.MainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.NavigationBadgeState
 import me.weishu.kernelsu.ui.component.bottombar.SideRail
 import me.weishu.kernelsu.ui.component.bottombar.rememberMainPagerState
+import me.weishu.kernelsu.PendingCrash
 import me.weishu.kernelsu.data.key.KeyGuard
+import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
 import me.weishu.kernelsu.ui.navigation3.IntentDispatcher
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
@@ -174,6 +181,38 @@ class MainActivity : ComponentActivity() {
                 LocalUiMode provides uiMode,
             ) {
                 DRDCTheme(appSettings = appSettings, uiMode = uiMode) {
+                    val crashContext = LocalContext.current
+                    var pendingCrash by remember { mutableStateOf(PendingCrash.read(crashContext)) }
+                    val crashDialog = rememberConfirmDialog(
+                        onConfirm = {
+                            val clipboard =
+                                crashContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(
+                                ClipData.newPlainText("drdc_crash", pendingCrash.orEmpty())
+                            )
+                            Toast.makeText(
+                                crashContext,
+                                "崩溃日志已复制，可以直接粘贴发送",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                            PendingCrash.clear(crashContext)
+                            pendingCrash = null
+                        },
+                        onDismiss = {
+                            PendingCrash.clear(crashContext)
+                            pendingCrash = null
+                        },
+                    )
+                    LaunchedEffect(pendingCrash) {
+                        pendingCrash?.let { text ->
+                            crashDialog.showConfirm(
+                                title = "上次运行崩溃了",
+                                content = text.take(3500),
+                                confirm = "复制日志",
+                                dismiss = "关闭",
+                            )
+                        }
+                    }
                     IntentDispatcher(intentChannel = intentChannel)
                     val swipeDismiss = if (uiState.enableSwipeDismiss) {
                         if (LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl) {

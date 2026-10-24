@@ -2,6 +2,7 @@ package me.weishu.kernelsu
 
 import android.app.Application
 import android.content.ContentValues
+import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -11,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,9 +32,29 @@ class CrashLogger(
     override fun uncaughtException(thread: Thread, throwable: Throwable) {
         Log.e(TAG, "uncaught exception on ${thread.name}", throwable)
         val stack = throwable.stackTraceToString().take(32 * 1024)
-        runCatching { upload(thread, stack) }
+        // Write locally first: the network may be unreachable and the process can be killed
+        // while an upload is still in flight.
+        runCatching { writePending(thread, stack) }
         runCatching { dump(thread, stack) }
+        runCatching { upload(thread, stack) }
         previous?.uncaughtException(thread, throwable) ?: exitProcess(1)
+    }
+
+    /** Kept for the dialog shown on the next launch (no root / no file manager needed). */
+    private fun writePending(thread: Thread, stack: String) {
+        val (device, platform) = deviceInfo()
+        val text = buildString {
+            appendLine("DRDC crash report")
+            appendLine("version  : ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            appendLine("device   : $device")
+            appendLine("platform : $platform")
+            appendLine("thread   : ${thread.name}")
+            appendLine()
+            append(stack)
+        }
+        val file = File(app.cacheDir, "crash/last-crash.txt")
+        file.parentFile?.mkdirs()
+        file.writeText(text)
     }
 
     private fun deviceInfo(): Pair<String, String> =
@@ -92,5 +114,17 @@ class CrashLogger(
 
     private companion object {
         const val TAG = "DRDCCrash"
+    }
+}
+
+/** Crash text saved by [CrashLogger], shown by the app on the next launch. */
+object PendingCrash {
+    private fun file(context: Context) = File(context.cacheDir, "crash/last-crash.txt")
+
+    fun read(context: Context): String? =
+        runCatching { file(context).takeIf { it.exists() }?.readText() }.getOrNull()
+
+    fun clear(context: Context) {
+        runCatching { file(context).delete() }
     }
 }
