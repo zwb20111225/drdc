@@ -19,14 +19,17 @@ object BootRepair {
         [ -z "${'$'}boot" ] && exit 0
         last=${'$'}(cat /data/adb/drdc/.boot_repair 2>/dev/null)
         [ "${'$'}boot" = "${'$'}last" ] && exit 0
+        mkdir -p /data/adb/drdc/log
+        # Re-apply saved kernel feature settings (su compat, adb root, sulog, ...).
+        /data/adb/drdcd feature load >> /data/adb/drdc/log/boot_repair.log 2>&1
         need=0
         ls /data/adb/modules/*/.remove >/dev/null 2>&1 && need=1
         if [ -d /data/adb/modules_update ] && [ -n "${'$'}(ls -A /data/adb/modules_update 2>/dev/null)" ]; then
             need=1
         fi
-        [ "${'$'}need" = 1 ] || exit 0
-        mkdir -p /data/adb/drdc/log
-        /data/adb/drdcd post-fs-data >> /data/adb/drdc/log/boot_repair.log 2>&1
+        if [ "${'$'}need" = 1 ]; then
+            /data/adb/drdcd post-fs-data >> /data/adb/drdc/log/boot_repair.log 2>&1
+        fi
         echo "${'$'}boot" > /data/adb/drdc/.boot_repair
     """.trimIndent()
 

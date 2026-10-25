@@ -217,9 +217,30 @@ fun undoUninstallModule(id: String): Boolean {
 
 fun uninstallModule(id: String): Boolean {
     val cmd = "module uninstall $id"
-    val result = execKsud(cmd, true)
-    Log.i(TAG, "uninstall module $id result: $result")
-    return result
+    val marked = execKsud(cmd, true)
+    Log.i(TAG, "uninstall module $id result: $marked")
+
+    // Make it take effect immediately instead of waiting for the next boot. Removing a
+    // mounted module can fail with EBUSY; in that case park the directory outside
+    // /data/adb/modules so the module disappears from the list and the next boot cleans it.
+    val moduleDir = "/data/adb/modules/$id"
+    val updateDir = "/data/adb/modules_update/$id"
+    val script = """
+        rm -rf '$moduleDir' '$updateDir' 2>/dev/null
+        if [ -d '$moduleDir' ]; then
+            mkdir -p /data/adb/drdc/trash
+            mv '$moduleDir' "/data/adb/drdc/trash/$id.${'$'}(date +%s)" 2>/dev/null
+        fi
+        if [ -d '$updateDir' ]; then
+            mkdir -p /data/adb/drdc/trash
+            mv '$updateDir' "/data/adb/drdc/trash/$id.${'$'}(date +%s)" 2>/dev/null
+        fi
+        test ! -e '$moduleDir' && test ! -e '$updateDir' && echo gone
+    """.trimIndent()
+    val gone = withNewRootShell(true) {
+        ShellUtils.fastCmd(this, "$script 2>/dev/null").trim() == "gone"
+    }
+    return marked || gone
 }
 
 private fun flashWithIO(
