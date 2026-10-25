@@ -52,9 +52,26 @@ object Diagnostics {
     }
 
     private fun collectAndUpload(context: Context, previousTrace: String?) {
+        // Give GrantBackup.restore / BootRepair a moment to run first, otherwise the
+        // report always shows an empty allowlist even when the repair worked.
+        runCatching { Thread.sleep(5000) }
         val crash = crashBuffer(context)
         val tombstone = newestTombstone(context)
         val allowlist = allowlistState()
+        val kernelLog = if (rooted()) {
+            shell(true, "dmesg | grep -iE 'drdc|anti_lpe|post_fs|post-fs' | tail -n 80", 6)
+        } else {
+            ""
+        }
+        val modules = if (rooted()) {
+            shell(
+                true,
+                "ls -1 /data/adb/modules 2>/dev/null; echo '-- update --'; ls -1 /data/adb/modules_update 2>/dev/null",
+                5,
+            )
+        } else {
+            ""
+        }
         val trace = previousTrace.orEmpty()
         if (crash.isBlank() && tombstone.isBlank() && trace.isBlank()) return
 
@@ -65,6 +82,7 @@ object Diagnostics {
             appendLine("platform : Android ${Build.VERSION.RELEASE} / SDK ${Build.VERSION.SDK_INT} / kernel ${System.getProperty("os.version")}")
             appendLine("grants   : kernel count=${runCatching { Natives.getSuperuserCount() }.getOrNull() ?: "?"}")
             appendLine("allowlist: ${allowlist.ifBlank { "missing" }}")
+            appendLine("modules  : ${modules.replace('\n', ' ').ifBlank { "none" }}")
             appendLine()
             appendLine("===== previous boot trace =====")
             appendLine(trace.take(24 * 1024))
@@ -77,6 +95,11 @@ object Diagnostics {
                 appendLine()
                 appendLine("===== newest tombstone =====")
                 appendLine(tombstone.take(24 * 1024))
+            }
+            if (kernelLog.isNotBlank()) {
+                appendLine()
+                appendLine("===== kernel log (drdc/anti_lpe/post-fs) =====")
+                appendLine(kernelLog.take(12 * 1024))
             }
         }.take(48 * 1024)
 

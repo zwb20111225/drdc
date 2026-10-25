@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import me.weishu.kernelsu.data.GrantBackup
+import me.weishu.kernelsu.data.BootRepair
 import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.ui.util.AntiLpe
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
@@ -94,6 +95,10 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
 
         // Some kernels lose the allowlist across reboots; re-apply the grants we saved.
         Thread({ runCatching { GrantBackup.restore(this) } }, "drdc-grants").apply { isDaemon = true }.start()
+
+        // Recover modules that were stuck in modules_update / never got their .remove
+        // marker processed because post-fs-data did not run at boot.
+        Thread({ runCatching { BootRepair.maybeRun() } }, "drdc-boot-repair").apply { isDaemon = true }.start()
 
         // Apply the saved PI-futex filter preference to the running kernel.
         Thread({
