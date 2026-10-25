@@ -529,4 +529,6 @@
     <string name="files_exec_stopped">Stopped</string>
     <string name="files_exec_finished">Finished (exit code %1$d)</string>
     <string name="files_exec_stop">Stop</string>
+<string name="files_exec_input_hint">Type input for the script…</string>
+    <string name="files_exec_send">Send</string>
 </resources>

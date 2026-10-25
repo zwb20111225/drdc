@@ -522,4 +522,6 @@
     <string name="files_exec_stopped">已停止</string>
     <string name="files_exec_finished">已结束（退出码 %1$d）</string>
     <string name="files_exec_stop">停止</string>
+<string name="files_exec_input_hint">脚本等待选择时在这里输入…</string>
+    <string name="files_exec_send">发送</string>
 </resources>

@@ -319,4 +319,6 @@
     <string name="files_exec_stopped">已停止</string>
     <string name="files_exec_finished">已結束（退出碼 %1$d）</string>
     <string name="files_exec_stop">停止</string>
+<string name="files_exec_input_hint">腳本等待選擇時在這裡輸入…</string>
+    <string name="files_exec_send">傳送</string>
 </resources>

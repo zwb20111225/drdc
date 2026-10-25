@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -58,6 +59,9 @@ sealed interface FilesDialog {
 }
 
 data class TransferRequest(val move: Boolean, val sources: List<FileEntry>, val destDir: String)
+
+/** Strips ANSI colour/cursor sequences so script output stays readable in the dialog. */
+private val ESCAPE_SEQUENCE = Regex("\u001b\\[[0-9;?]*[A-Za-z]")
 
 enum class ConflictPolicy { Overwrite, Skip, KeepBoth }
 
@@ -182,6 +186,8 @@ class FilesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dismissDialog() {
+        val current = dialog
+        if (current is FilesDialog.Exec && current.running) stopExec()
         dialog = FilesDialog.None
     }
 
@@ -281,34 +287,119 @@ class FilesViewModel(application: Application) : AndroidViewModel(application) {
         executeFile(entry, command)
     }
 
+    private val execLines = ArrayList<String>()
+    private var execProcess: Process? = null
+    private var execWriter: java.io.BufferedWriter? = null
+
     private fun executeFile(entry: FileEntry, command: String) {
         execJob?.cancel()
-        val lines = ArrayList<String>()
+        runCatching { execProcess?.destroyForcibly() }
+        execProcess = null
+        runCatching { execWriter?.close() }
+        execWriter = null
+        synchronized(execLines) { execLines.clear() }
         dialog = FilesDialog.Exec(entry = entry, command = command)
-        execJob = viewModelScope.launch {
-            val code = FilesShell.runStreaming(command) { line ->
-                lines.add(line)
-                while (lines.size > 2000) lines.removeAt(0)
+        execJob = viewModelScope.launch(Dispatchers.IO) {
+            var code = -1
+            fun append(raw: String) {
+                val line = raw.replace(ESCAPE_SEQUENCE, "")
+                if (line.isEmpty()) return
+                synchronized(execLines) {
+                    execLines.add(line)
+                    while (execLines.size > 2000) execLines.removeAt(0)
+                }
                 val current = dialog
                 if (current is FilesDialog.Exec && current.entry.path == entry.path) {
-                    dialog = current.copy(lines = ArrayList(lines))
+                    dialog = current.copy(lines = synchronized(execLines) { ArrayList(execLines) })
                 }
             }
-            val current = dialog
-            if (current is FilesDialog.Exec && current.entry.path == entry.path) {
-                dialog = current.copy(lines = ArrayList(lines), running = false, exitCode = code)
+            try {
+                // A dedicated su process, not the shared root shell: a script that waits
+                // for input must never block the file manager's own commands.
+                val process = ProcessBuilder("su", "-c", command)
+                    .redirectErrorStream(true)
+                    .start()
+                execProcess = process
+                execWriter = process.outputStream.bufferedWriter()
+                val reader = process.inputStream.bufferedReader()
+                val pending = StringBuilder()
+                val buffer = CharArray(4096)
+                while (true) {
+                    val n = reader.read(buffer)
+                    if (n < 0) break
+                    pending.append(buffer, 0, n)
+                    var newline = pending.indexOfFirst { it == '\n' || it == '\r' }
+                    while (newline >= 0) {
+                        val line = pending.substring(0, newline)
+                        pending.delete(0, newline + 1)
+                        append(line)
+                        newline = pending.indexOfFirst { it == '\n' || it == '\r' }
+                    }
+                    // Prompts usually do not end with a newline; show them immediately.
+                    if (pending.isNotEmpty()) {
+                        append(pending.toString())
+                        pending.clear()
+                    }
+                }
+                code = process.waitFor()
+            } catch (e: Throwable) {
+                append("[!] ${e.message ?: "执行失败"}")
+            } finally {
+                runCatching { execWriter?.close() }
+                execWriter = null
+                runCatching { execProcess?.destroyForcibly() }
+                execProcess = null
+                val current = dialog
+                if (current is FilesDialog.Exec && current.entry.path == entry.path) {
+                    dialog = current.copy(
+                        lines = synchronized(execLines) { ArrayList(execLines) },
+                        running = false,
+                        exitCode = code,
+                    )
+                }
+                refreshAll()
             }
-            refreshAll()
+        }
+    }
+
+    /** Writes one line to the running script's stdin (menus, `read`, etc.). */
+    fun sendExecInput(text: String) {
+        val writer = execWriter ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                writer.write(text)
+                writer.newLine()
+                writer.flush()
+                synchronized(execLines) {
+                    execLines.add("> $text")
+                    while (execLines.size > 2000) execLines.removeAt(0)
+                }
+                val current = dialog
+                if (current is FilesDialog.Exec) {
+                    dialog = current.copy(lines = synchronized(execLines) { ArrayList(execLines) })
+                }
+            }
         }
     }
 
     fun stopExec() {
         val current = dialog as? FilesDialog.Exec ?: return
         execJob?.cancel()
-        dialog = current.copy(running = false, exitCode = -1)
-        viewModelScope.launch {
-            FilesShell.run("pkill -f ${FilesShell.q(current.entry.path)}")
+        runCatching { execProcess?.destroyForcibly() }
+        execProcess = null
+        runCatching { execWriter?.close() }
+        execWriter = null
+        val now = dialog
+        if (now is FilesDialog.Exec && now.entry.path == current.entry.path) {
+            dialog = now.copy(running = false, exitCode = -1)
         }
+        refreshAll()
+    }
+
+    override fun onCleared() {
+        runCatching { execProcess?.destroyForcibly() }
+        execProcess = null
+        super.onCleared()
     }
 
     fun openApk(entry: FileEntry) {

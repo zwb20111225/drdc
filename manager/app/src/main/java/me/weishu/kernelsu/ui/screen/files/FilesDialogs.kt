@@ -506,6 +506,7 @@ private fun PropertyRow(palette: FilesPalette, label: String, value: String) {
 @Composable
 private fun ExecDialog(viewModel: FilesViewModel, palette: FilesPalette, spec: FilesDialog.Exec) {
     val scroll = rememberScrollState()
+    var input by remember(spec.entry.path) { mutableStateOf("") }
     LaunchedEffect(spec.lines.size) {
         scroll.scrollTo(Int.MAX_VALUE)
     }
@@ -551,6 +552,50 @@ private fun ExecDialog(viewModel: FilesViewModel, palette: FilesPalette, spec: F
                 }
             }
             Spacer(Modifier.height(8.dp))
+            if (spec.running) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(palette.surfaceVariant)
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                    ) {
+                        if (input.isEmpty()) {
+                            MaterialText(
+                                text = stringResource(R.string.files_exec_input_hint),
+                                fontSize = 11.sp,
+                                color = palette.onSurfaceVariant,
+                            )
+                        }
+                        BasicTextField(
+                            value = input,
+                            onValueChange = { input = it },
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                color = palette.onSurface,
+                            ),
+                            cursorBrush = SolidColor(palette.primary),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    FilesButton(
+                        palette,
+                        stringResource(R.string.files_exec_send),
+                        {
+                            if (input.isNotEmpty()) {
+                                viewModel.sendExecInput(input)
+                                input = ""
+                            }
+                        },
+                        primary = true,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
             val status = when {
                 spec.running -> stringResource(R.string.files_exec_running)
                 spec.exitCode == -1 -> stringResource(R.string.files_exec_stopped)
