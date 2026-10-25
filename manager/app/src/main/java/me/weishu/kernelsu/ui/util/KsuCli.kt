@@ -459,6 +459,7 @@ fun downloadBoot(
     var probedKmi: String? = null
     try {
         onStdout("- Downloading and extracting boot image")
+        onStdout("- " + ksuApp.getString(me.weishu.kernelsu.R.string.download_blessing))
         val channel = DataSourceChannel(newDownloadClient(), url)
         val magic = readMagic(channel)
         val image = ExtractImage(bootFile, onStdout)

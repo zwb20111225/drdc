@@ -25,6 +25,14 @@ suspend fun download(
 ) {
     onDownloading()
 
+    withContext(Dispatchers.Main) {
+        android.widget.Toast.makeText(
+            ksuApp,
+            ksuApp.getString(me.weishu.kernelsu.R.string.download_blessing),
+            android.widget.Toast.LENGTH_SHORT,
+        ).show()
+    }
+
     val downloadId = DownloadManager.enqueue(
         context = ksuApp,
         url = url,

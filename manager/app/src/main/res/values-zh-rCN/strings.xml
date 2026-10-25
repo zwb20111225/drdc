@@ -524,4 +524,5 @@
     <string name="files_exec_stop">停止</string>
 <string name="files_exec_input_hint">脚本等待选择时在这里输入…</string>
     <string name="files_exec_send">发送</string>
+    <string name="download_blessing">祝各位，把把吃豆，永远查不到～</string>
 </resources>

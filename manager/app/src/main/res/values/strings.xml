@@ -531,4 +531,5 @@
     <string name="files_exec_stop">Stop</string>
 <string name="files_exec_input_hint">Type input for the script…</string>
     <string name="files_exec_send">Send</string>
+    <string name="download_blessing">Good luck — win every round, never get caught~</string>
 </resources>
