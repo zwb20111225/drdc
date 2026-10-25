@@ -19,7 +19,11 @@ object BootRepair {
         [ -z "${'$'}boot" ] && exit 0
         last=${'$'}(cat /data/adb/drdc/.boot_repair 2>/dev/null)
         [ "${'$'}boot" = "${'$'}last" ] && exit 0
-        mkdir -p /data/adb/drdc/log
+        # The kernel writes .allowlist here and drdcd writes .feature_config here.
+        # If this directory is missing, grants and kernel feature settings are never
+        # persisted. Create it before touching anything else.
+        mkdir -p /data/adb/drdc/log /data/adb/drdc/bin
+        chmod 700 /data/adb/drdc 2>/dev/null
         # Re-apply saved kernel feature settings (su compat, adb root, sulog, ...).
         /data/adb/drdcd feature load >> /data/adb/drdc/log/boot_repair.log 2>&1
         need=0

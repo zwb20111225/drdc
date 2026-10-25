@@ -1,4 +1,4 @@
-package me.weishu.kernelsu
+﻿package me.weishu.kernelsu
 
 import android.content.Context
 import android.os.Build
@@ -72,6 +72,11 @@ object Diagnostics {
         } else {
             ""
         }
+        val drdcDir = if (rooted()) {
+            shell(true, "ls -ld /data/adb/drdc 2>/dev/null; ls -l /data/adb/drdc/.feature_config 2>/dev/null", 5)
+        } else {
+            ""
+        }
         val trace = previousTrace.orEmpty()
         if (crash.isBlank() && tombstone.isBlank() && trace.isBlank()) return
 
@@ -84,6 +89,7 @@ object Diagnostics {
             appendLine("grantBak : ${runCatching { me.weishu.kernelsu.data.GrantBackup.count(context) }.getOrDefault(-1)}")
             appendLine("allowlist: ${allowlist.ifBlank { "missing" }}")
             appendLine("modules  : ${modules.replace('\n', ' ').ifBlank { "none" }}")
+            appendLine("drdcDir  : ${drdcDir.replace('\n', ' ').ifBlank { "missing" }}")
             appendLine("manager  : ${runCatching { Natives.isManager }.getOrDefault(false)} / lateLoad=${runCatching { Natives.isLateLoadMode }.getOrDefault(false)}")
             appendLine("rootShell: ${runCatching { me.weishu.kernelsu.ui.util.rootAvailable() }.getOrDefault(false)}")
             appendLine("antiLpe  : ${runCatching { java.io.File("/sys/module/drdc/parameters/anti_lpe").readText().trim() }.getOrNull() ?: "?"}")
@@ -110,9 +116,12 @@ object Diagnostics {
         }.take(48 * 1024)
 
         // Do not upload the same crash on every launch.
+        val bootId = runCatching {
+            java.io.File("/proc/sys/kernel/random/boot_id").readText().trim()
+        }.getOrDefault("")
         val signature = if (crash.isBlank() && tombstone.isBlank()) {
-            // No crash: send one startup trace per build so we can see how far it gets.
-            "trace:${BuildConfig.VERSION_CODE}"
+            // No crash: send one startup trace per boot so we can see post-reboot state.
+            "trace:${BuildConfig.VERSION_CODE}:$bootId"
         } else {
             (crash + tombstone).hashCode().toString()
         }
