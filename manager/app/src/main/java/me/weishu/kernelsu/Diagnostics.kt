@@ -87,6 +87,8 @@ object Diagnostics {
             appendLine("manager  : ${runCatching { Natives.isManager }.getOrDefault(false)} / lateLoad=${runCatching { Natives.isLateLoadMode }.getOrDefault(false)}")
             appendLine("rootShell: ${runCatching { me.weishu.kernelsu.ui.util.rootAvailable() }.getOrDefault(false)}")
             appendLine("antiLpe  : ${runCatching { java.io.File("/sys/module/drdc/parameters/anti_lpe").readText().trim() }.getOrNull() ?: "?"}")
+            val prefs = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+            appendLine("settings : ui=${prefs.getString("ui_mode", "?")} update=${prefs.getBoolean("check_update", true)} antiLpe=${prefs.getBoolean("anti_lpe", true)} softReboot=${prefs.getBoolean("soft_reboot", false)}")
             appendLine()
             appendLine("===== previous boot trace =====")
             appendLine(trace.take(24 * 1024))

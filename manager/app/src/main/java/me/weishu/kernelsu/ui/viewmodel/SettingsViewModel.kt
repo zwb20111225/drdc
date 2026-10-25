@@ -29,10 +29,45 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
+        applyStoredSettings()
         refresh()
     }
 
+    /** Show the persisted UI settings immediately; kernel feature reads are slower. */
+    private fun applyStoredSettings() {
+        _uiState.update {
+            it.copy(
+                uiMode = repo.uiMode,
+                checkUpdate = repo.checkUpdate,
+                checkModuleUpdate = repo.checkModuleUpdate,
+                themeMode = repo.themeMode,
+                miuixMonet = repo.miuixMonet,
+                keyColor = repo.keyColor,
+                colorStyle = repo.colorStyle,
+                colorSpec = repo.colorSpec,
+                enablePredictiveBack = repo.enablePredictiveBack,
+                enableSwipeDismiss = repo.enableSwipeDismiss,
+                pagerInterceptionMode = repo.pagerInterceptionMode,
+                enableBlur = repo.enableBlur,
+                enableFloatingBottomBar = repo.enableFloatingBottomBar,
+                enableFloatingBottomBarBlur = repo.enableFloatingBottomBarBlur,
+                enableNavigationBadge = repo.enableNavigationBadge,
+                pageScale = repo.pageScale,
+                moduleDescriptionMaxLines = repo.moduleDescriptionMaxLines,
+                enableWebDebugging = repo.enableWebDebugging,
+                autoJailbreak = repo.autoJailbreak,
+                useSoftReboot = repo.useSoftReboot,
+                disguisePasscode = repo.disguisePasscode,
+                showLauncherIcon = repo.showLauncherIcon,
+                antiLpeEnabled = repo.antiLpeEnabled,
+                isLkmMode = repo.isLkmMode(),
+                isLateLoadMode = Natives.isLateLoadMode,
+            )
+        }
+    }
+
     fun refresh() {
+        applyStoredSettings()
         viewModelScope.launch {
             val checkUpdate = repo.checkUpdate
             val checkModuleUpdate = repo.checkModuleUpdate
@@ -101,9 +136,11 @@ class SettingsViewModel(
             } else {
                 null
             }
-            val antiLpeEnabled = antiLpeKernel ?: repo.antiLpeEnabled
-            if (antiLpeKernel != null && antiLpeKernel != repo.antiLpeEnabled) {
-                repo.antiLpeEnabled = antiLpeKernel
+            // The preference is the source of truth. Do not overwrite it with the kernel
+            // default (which is ON after a fresh boot) or the switch would reset itself.
+            val antiLpeEnabled = repo.antiLpeEnabled
+            if (antiLpeSupported && antiLpeKernel != repo.antiLpeEnabled) {
+                withContext(Dispatchers.IO) { AntiLpe.apply(repo.antiLpeEnabled) }
             }
 
             _uiState.update {
