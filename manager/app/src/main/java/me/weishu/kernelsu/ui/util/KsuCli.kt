@@ -58,8 +58,34 @@ data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) 
 }
 
 object KsuCli {
-    val SHELL: Shell = createRootShell()
-    val GLOBAL_MNT_SHELL: Shell = createRootShell(true)
+    @Volatile
+    private var cachedShell: Shell? = null
+
+    @Volatile
+    private var cachedGlobalShell: Shell? = null
+
+    val SHELL: Shell
+        get() = cachedShell ?: synchronized(this) {
+            cachedShell ?: createRootShell().also { cachedShell = it }
+        }
+
+    val GLOBAL_MNT_SHELL: Shell
+        get() = cachedGlobalShell ?: synchronized(this) {
+            cachedGlobalShell ?: createRootShell(true).also { cachedGlobalShell = it }
+        }
+
+    /**
+     * Drop the cached shells. Called when the shell was created during a slow boot and
+     * fell back to a non-root `sh`; the next getRootShell() starts a fresh `su`.
+     */
+    fun resetShells() {
+        synchronized(this) {
+            runCatching { cachedShell?.close() }
+            runCatching { cachedGlobalShell?.close() }
+            cachedShell = null
+            cachedGlobalShell = null
+        }
+    }
 }
 
 fun getRootShell(globalMnt: Boolean = false): Shell {
@@ -587,8 +613,19 @@ fun reboot(reason: String = "") {
 }
 
 fun rootAvailable(): Boolean {
-    val shell = getRootShell()
-    return shell.isRoot
+    // A shell created during a slow boot may have fallen back to a non-root `sh`. Retry
+    // with a fresh su a few times instead of caching that failure forever.
+    repeat(6) {
+        if (runCatching { getRootShell().isRoot }.getOrDefault(false)) return true
+        KsuCli.resetShells()
+        Thread.sleep(400)
+    }
+    return runCatching {
+        val process = ProcessBuilder("su", "-c", "id").redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().readText()
+        process.waitFor()
+        output.contains("uid=0")
+    }.getOrDefault(false)
 }
 
 suspend fun getCurrentKmi(): String = withContext(Dispatchers.IO) {

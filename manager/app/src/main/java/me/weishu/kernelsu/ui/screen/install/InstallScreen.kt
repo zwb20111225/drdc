@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -72,7 +73,12 @@ fun InstallScreen() {
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }
     val defaultPartition by produceState(initialValue = "") { value = getDefaultPartition() }
-    val rootAvailable by produceState(initialValue = false) { value = withContext(Dispatchers.IO) { rootAvailable() } }
+    val rootAvailable by produceState(initialValue = false) {
+        while (!value) {
+            value = withContext(Dispatchers.IO) { rootAvailable() }
+            if (!value) delay(1500)
+        }
+    }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
     val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
 

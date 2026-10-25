@@ -3,6 +3,7 @@ package me.weishu.kernelsu.data
 import com.topjohnwu.superuser.ShellUtils
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.ui.util.getRootShell
+import me.weishu.kernelsu.ui.util.rootAvailable
 
 /**
  * On some devices init never manages to exec `/data/adb/drdcd post-fs-data` (the rc
@@ -34,6 +35,7 @@ object BootRepair {
         val isManager = runCatching { Natives.isManager }.getOrDefault(false)
         val version = runCatching { Natives.version }.getOrDefault(0)
         if (!isManager || version <= 0) return
+        if (!rootAvailable()) return
         runCatching { ShellUtils.fastCmd(getRootShell(), SCRIPT) }
     }
 }

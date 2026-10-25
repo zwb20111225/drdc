@@ -29,6 +29,7 @@
 #include "feature/anti_lpe.h"
 #include "hook/syscall_hook.h"
 #include "klog.h" // IWYU pragma: keep
+#include "manager/manager_identity.h"
 
 #define ANTI_LPE_ON_FLAG "/data/adb/drdc/anti_lpe"
 #define ANTI_LPE_OFF_FLAG "/data/adb/drdc/anti_lpe_off"
@@ -112,7 +113,9 @@ static long drdc_sys_futex_hook(const struct pt_regs *regs)
         uid_t uid = current_uid().val;
         // Apps (uid >= 10000) are the untrusted surface; root/system/shell keep full
         // futex functionality. Isolated app processes are >= 90000 and covered too.
-        if (uid >= 10000) {
+        // Never filter the manager or its su daemon: if we did, a bad filter could lock
+        // the user out of the root shell needed to turn it off.
+        if (uid >= 10000 && !is_uid_manager(uid) && strcmp(current->comm, "drdcd") != 0) {
             unsigned int op = (unsigned int)PT_REGS_PARM2(regs);
             if (drdc_is_pi_futex_op(op)) {
                 pr_info_ratelimited(
