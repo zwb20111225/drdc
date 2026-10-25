@@ -116,25 +116,25 @@ fun Uri.getFileName(context: Context): String? {
 fun createRootShell(globalMnt: Boolean = false): Shell {
     Shell.enableVerboseLogging = BuildConfig.DEBUG
 
-    // Prefer the system `su`. On DRDC devices drdcd provides it, and on devices rooted by
-    // Magisk/KernelSU it is the only thing that works (our daemon cannot find its driver).
-    // Doing this first also keeps DRDC-only JNI out of the startup path.
-    try {
-        val builder = Shell.Builder.create()
-        return if (globalMnt) builder.build("su", "-mm") else builder.build("su")
-    } catch (e: Throwable) {
-        Log.w(TAG, "su unavailable, trying the bundled drdcd", e)
-    }
-
+    // KernelSU uses its own daemon as the shell backend. Keep the same order instead of
+    // probing the system `su` first: on a locked-bootloader build a transient failure
+    // there used to be cached as a non-root `sh` and hid direct install / grants.
     try {
         val builder = Shell.Builder.create()
         return if (globalMnt) {
-            builder.build(getKsuDaemonPath(), "debug", "su", "-g")
+            builder.build(getKsuDaemonPath(), "debug", "su", "-mm")
         } else {
             builder.build(getKsuDaemonPath(), "debug", "su")
         }
     } catch (e: Throwable) {
-        Log.e(TAG, "drdcd shell failed as well, falling back to sh", e)
+        Log.w(TAG, "drdcd shell failed, trying su", e)
+    }
+
+    try {
+        val builder = Shell.Builder.create()
+        return if (globalMnt) builder.build("su", "-mm") else builder.build("su")
+    } catch (e: Throwable) {
+        Log.e(TAG, "su failed as well", e)
     }
 
     return Shell.Builder.create().build("sh")

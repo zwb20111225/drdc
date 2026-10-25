@@ -232,6 +232,10 @@ fn link_drdcd_to_bin() -> Result<()> {
 
 pub fn install(libadbroot: Option<PathBuf>, data_path: Option<PathBuf>) -> Result<()> {
     ensure_dir_exists(defs::ADB_DIR)?;
+    // The kernel writes .allowlist and the daemon writes .feature_config here. Upstream
+    // KernelSU creates its working directory during install; do the same so persistence
+    // does not silently fail on a fresh install.
+    ensure_dir_exists(defs::WORKING_DIR)?;
     let _ = std::fs::remove_file(defs::DAEMON_PATH);
     std::fs::copy(
         // We should use /proc/self/exe, DO NOT resolve the real path
