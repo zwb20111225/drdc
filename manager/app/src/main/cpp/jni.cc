@@ -141,7 +141,7 @@ static void fillArrayWithList(JNIEnv *env, jobject list, int *data, int count) {
 extern "C"
 JNIEXPORT jobject JNICALL
 Java_me_weishu_kernelsu_Natives_getAppProfile(JNIEnv *env, jobject, jstring pkg, jint uid) {
-    if (env->GetStringLength(pkg) > KSU_MAX_PACKAGE_NAME) {
+    if (env->GetStringLength(pkg) >= KSU_MAX_PACKAGE_NAME) {
         return nullptr;
     }
 
@@ -158,7 +158,12 @@ Java_me_weishu_kernelsu_Natives_getAppProfile(JNIEnv *env, jobject, jstring pkg,
 
     bool useDefaultProfile = get_app_profile(&profile) != 0;
 
-    auto cls = env->FindClass("me/weishu/drdc/Natives$Profile");
+    auto cls = env->FindClass("me/weishu/kernelsu/Natives$Profile");
+    if (cls == nullptr) {
+        // FindClass has already thrown NoClassDefFoundError; returning null keeps that a
+        // normal Java exception instead of aborting the whole process.
+        return nullptr;
+    }
     auto constructor = env->GetMethodID(cls, "<init>", "()V");
     auto obj = env->NewObject(cls, constructor);
     auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
@@ -239,7 +244,12 @@ Java_me_weishu_kernelsu_Natives_getAppProfile(JNIEnv *env, jobject, jstring pkg,
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_me_weishu_kernelsu_Natives_setAppProfile(JNIEnv *env, jobject clazz, jobject profile) {
-    auto cls = env->FindClass("me/weishu/drdc/Natives$Profile");
+    // Use the runtime class of the object we were given: looking it up by name broke after
+    // the package rename and turned every profile write into a native abort.
+    auto cls = env->GetObjectClass(profile);
+    if (cls == nullptr) {
+        return JNI_FALSE;
+    }
 
     auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
     auto currentUidField = env->GetFieldID(cls, "currentUid", "I");
@@ -263,7 +273,7 @@ Java_me_weishu_kernelsu_Natives_setAppProfile(JNIEnv *env, jobject clazz, jobjec
     if (!key) {
         return false;
     }
-    if (env->GetStringLength((jstring) key) > KSU_MAX_PACKAGE_NAME) {
+    if (env->GetStringLength((jstring) key) >= KSU_MAX_PACKAGE_NAME) {
         return false;
     }
 
