@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import me.weishu.kernelsu.data.GrantBackup
 import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
@@ -89,6 +90,9 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
 
         KeyGuard.init(this)
         Diagnostics.mark(this, "application.ready")
+
+        // Some kernels lose the allowlist across reboots; re-apply the grants we saved.
+        Thread({ runCatching { GrantBackup.restore(this) } }, "drdc-grants").apply { isDaemon = true }.start()
     }
 
     override val viewModelStore: ViewModelStore

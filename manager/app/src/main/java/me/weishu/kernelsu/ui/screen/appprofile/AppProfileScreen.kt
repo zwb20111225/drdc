@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import me.weishu.kernelsu.Natives
+import me.weishu.kernelsu.data.GrantBackup
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
@@ -131,6 +132,7 @@ fun AppProfileScreen(uid: Int) {
                 if (!Natives.setAppProfile(profileToSave)) {
                     showMessage(failToUpdateAppProfile)
                 } else {
+                    GrantBackup.record(me.weishu.kernelsu.ksuApp, profileToSave)
                     profile = profileToSave
                     if (uiMode == UiMode.Material) {
                         viewModel.loadAppList()

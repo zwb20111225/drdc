@@ -54,6 +54,7 @@ object Diagnostics {
     private fun collectAndUpload(context: Context, previousTrace: String?) {
         val crash = crashBuffer(context)
         val tombstone = newestTombstone(context)
+        val allowlist = allowlistState()
         val trace = previousTrace.orEmpty()
         if (crash.isBlank() && tombstone.isBlank() && trace.isBlank()) return
 
@@ -62,6 +63,8 @@ object Diagnostics {
             appendLine("version  : ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             appendLine("device   : ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
             appendLine("platform : Android ${Build.VERSION.RELEASE} / SDK ${Build.VERSION.SDK_INT} / kernel ${System.getProperty("os.version")}")
+            appendLine("grants   : kernel count=${runCatching { Natives.getSuperuserCount() }.getOrNull() ?: "?"}")
+            appendLine("allowlist: ${allowlist.ifBlank { "missing" }}")
             appendLine()
             appendLine("===== previous boot trace =====")
             appendLine(trace.take(24 * 1024))
@@ -114,6 +117,15 @@ object Diagnostics {
 
     /** Only ask su when our kernel is actually loaded, to avoid pointless prompts. */
     private fun rooted(): Boolean = runCatching { Natives.version > 0 }.getOrDefault(false)
+
+    private fun allowlistState(): String {
+        if (!rooted()) return ""
+        return shell(
+            true,
+            "ls -l /data/adb/drdc/.allowlist 2>/dev/null; od -An -tx1 -N8 /data/adb/drdc/.allowlist 2>/dev/null",
+            5,
+        ).replace('\n', ' ').trim()
+    }
 
     private fun crashBuffer(context: Context): String {
         // Apps can usually only read their own log entries; try without root first and

@@ -268,7 +268,12 @@ class FilesViewModel(application: Application) : AndroidViewModel(application) {
         val dir = entry.path.substringBeforeLast('/', "/").ifEmpty { "/" }
         val executable = entry.perm.length >= 10 &&
             listOf(3, 6, 9).any { entry.perm[it] == 'x' }
-        val command = if (executable) {
+        val shellScript = entry.name.endsWith(".sh", true) ||
+            entry.name.endsWith(".bash", true) ||
+            entry.name.endsWith(".zsh", true)
+        // /sdcard is mounted noexec, so scripts must go through sh even when they carry
+        // the executable bit. Other binaries can only be started directly.
+        val command = if (!shellScript && executable) {
             "cd ${FilesShell.q(dir)} && ./${FilesShell.q(entry.name)}"
         } else {
             "cd ${FilesShell.q(dir)} && sh ${FilesShell.q(entry.name)}"
