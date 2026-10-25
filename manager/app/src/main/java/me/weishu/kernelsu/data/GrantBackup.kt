@@ -39,12 +39,22 @@ object GrantBackup {
         if (grants.remove(entry)) write(context, grants)
     }
 
+    fun count(context: Context): Int = read(context).size
+
     /**
      * Re-applies saved grants that the kernel no longer has. Safe to call from a background
-     * thread; does nothing when the manager is not the active root provider.
+     * thread; waits briefly for the manager to be recognised by the kernel (throne tracker
+     * can run a moment after the app starts).
      */
     fun restore(context: Context) {
-        if (!runCatching { Natives.isManager }.getOrDefault(false)) return
+        var isManager = runCatching { Natives.isManager }.getOrDefault(false)
+        var waited = 0
+        while (!isManager && waited < 6000) {
+            Thread.sleep(300)
+            waited += 300
+            isManager = runCatching { Natives.isManager }.getOrDefault(false)
+        }
+        if (!isManager) return
         val grants = read(context)
         if (grants.isEmpty()) return
         for (entry in grants) {

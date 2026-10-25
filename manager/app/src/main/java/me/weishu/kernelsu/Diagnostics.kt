@@ -81,6 +81,7 @@ object Diagnostics {
             appendLine("device   : ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
             appendLine("platform : Android ${Build.VERSION.RELEASE} / SDK ${Build.VERSION.SDK_INT} / kernel ${System.getProperty("os.version")}")
             appendLine("grants   : kernel count=${runCatching { Natives.getSuperuserCount() }.getOrNull() ?: "?"}")
+            appendLine("grantBak : ${runCatching { me.weishu.kernelsu.data.GrantBackup.count(context) }.getOrDefault(-1)}")
             appendLine("allowlist: ${allowlist.ifBlank { "missing" }}")
             appendLine("modules  : ${modules.replace('\n', ' ').ifBlank { "none" }}")
             appendLine("manager  : ${runCatching { Natives.isManager }.getOrDefault(false)} / lateLoad=${runCatching { Natives.isLateLoadMode }.getOrDefault(false)}")
