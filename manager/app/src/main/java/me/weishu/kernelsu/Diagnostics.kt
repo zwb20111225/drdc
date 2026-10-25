@@ -112,15 +112,20 @@ object Diagnostics {
         }
     }
 
+    /** Only ask su when our kernel is actually loaded, to avoid pointless prompts. */
+    private fun rooted(): Boolean = runCatching { Natives.version > 0 }.getOrDefault(false)
+
     private fun crashBuffer(context: Context): String {
         // Apps can usually only read their own log entries; try without root first and
         // fall back to su, which is what actually works on a rooted device.
         val plain = shell(false, "logcat -b crash -d -t 400", 5)
         if (plain.isNotBlank()) return plain
+        if (!rooted()) return ""
         return shell(true, "logcat -b crash -d -t 400", 6)
     }
 
     private fun newestTombstone(context: Context): String {
+        if (!rooted()) return ""
         val name = shell(true, "ls -t /data/tombstones 2>/dev/null | head -n 1", 5).trim()
         if (name.isEmpty()) return ""
         return shell(true, "cat /data/tombstones/$name 2>/dev/null", 6)
