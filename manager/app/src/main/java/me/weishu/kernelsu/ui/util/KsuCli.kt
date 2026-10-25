@@ -643,6 +643,18 @@ fun hasMagisk(): Boolean {
     return result.isSuccess
 }
 
+/**
+ * True when another root manager already patched the boot image. Flashing DRDC on top of it
+ * produces a stacked patch and the other manager keeps winning at boot, so we must refuse.
+ */
+suspend fun hasOtherRootManager(): Boolean = withContext(Dispatchers.IO) {
+    val shell = getRootShell()
+    ShellUtils.fastCmdResult(
+        shell,
+        "test -d /data/adb/ksu || test -d /data/adb/magisk || test -d /data/adb/ksu_next || test -d /data/adb/ap",
+    )
+}
+
 fun isSepolicyValid(rules: String?): Boolean {
     if (rules == null) {
         return true

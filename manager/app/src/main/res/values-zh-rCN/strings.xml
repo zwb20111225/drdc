@@ -515,4 +515,5 @@
     <string name="settings_disguise_passcode_invalid">请输入 4-12 位数字，且不能以 0 开头。</string>
     <string name="settings_disguise_show_icon">显示桌面图标</string>
     <string name="settings_disguise_show_icon_summary">在桌面同时显示冬日渡川入口。</string>
+    <string name="install_root_manager_conflict">检测到已安装 KernelSU/Magisk，它已经改过引导镜像。请先在它的管理器里卸载（会恢复原厂镜像），重启后再刷 DRDC，否则会叠加冲突。</string>
 </resources>

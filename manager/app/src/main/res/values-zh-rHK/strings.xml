@@ -429,4 +429,5 @@
     <string name="keys_error_network_detail">網絡錯誤：%1$s</string>
     <string name="keys_error_offline_expired">離線時間過長，請連線後重試</string>
     <string name="keys_error_generic">啟用失敗：%1$s</string>
+    <string name="install_root_manager_conflict">偵測到已安裝 KernelSU/Magisk，它已修改引導映像。請先在它的管理器中解除安裝（會還原原廠映像），重新開機後再刷 DRDC，否則會疊加衝突。</string>
 </resources>

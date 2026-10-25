@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import android.widget.Toast
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,6 +38,7 @@ import me.weishu.kernelsu.ui.util.getAvailablePartitions
 import me.weishu.kernelsu.ui.util.getCurrentKmi
 import me.weishu.kernelsu.ui.util.getDefaultPartition
 import me.weishu.kernelsu.ui.util.getSlotSuffix
+import me.weishu.kernelsu.ui.util.hasOtherRootManager
 import me.weishu.kernelsu.ui.util.isAbDevice
 import me.weishu.kernelsu.ui.util.probeRemoteBootPartitions
 import me.weishu.kernelsu.ui.util.rootAvailable
@@ -73,6 +75,7 @@ fun InstallScreen() {
     val rootAvailable by produceState(initialValue = false) { value = rootAvailable() }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
     val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
+    val otherRootManager by produceState(initialValue = false) { value = hasOtherRootManager() }
 
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
@@ -261,6 +264,18 @@ fun InstallScreen() {
         onNext = {
             val isLkmSelected = lkmSelection != LkmSelection.KmiNone
             val isKmiUnknown = currentKmi.isBlank()
+            val isDirect = installMethod is InstallMethod.DirectInstall ||
+                installMethod is InstallMethod.DirectInstallToInactiveSlot
+            // Another manager already patched this boot image; our patch would be stacked on
+            // top of it and the old one keeps winning at boot, so block instead of pretending.
+            val blockedByOtherManager = isDirect && !isLkmSelected && otherRootManager
+            if (blockedByOtherManager) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.install_root_manager_conflict),
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
             val isKmiUnresolved = when (installMethod) {
                 // The download flow extracts the KMI itself; no manual
                 // selection needed.
@@ -268,10 +283,10 @@ fun InstallScreen() {
                 is InstallMethod.SelectFile -> true
                 else -> isKmiUnknown
             }
-            if (!isLkmSelected && isKmiUnresolved) {
-                showChooseKmiDialog.value = true
-            } else {
-                onInstall()
+            when {
+                blockedByOtherManager -> Unit
+                !isLkmSelected && isKmiUnresolved -> showChooseKmiDialog.value = true
+                else -> onInstall()
             }
         },
         onAdvancedOptionsClicked = {
