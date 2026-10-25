@@ -122,7 +122,7 @@ fun createRootShell(globalMnt: Boolean = false): Shell {
     try {
         val builder = Shell.Builder.create()
         return if (globalMnt) {
-            builder.build(getKsuDaemonPath(), "debug", "su", "-mm")
+            builder.build(getKsuDaemonPath(), "debug", "su", "-g")
         } else {
             builder.build(getKsuDaemonPath(), "debug", "su")
         }
