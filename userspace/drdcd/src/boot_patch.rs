@@ -633,6 +633,125 @@ fn parse_force_feature(s: &str) -> Result<(FeatureId, u64)> {
     Ok((parse_feature_id(name)?, value))
 }
 
+/// What to do when the live boot image is already patched by another root manager.
+#[cfg(target_os = "android")]
+enum Takeover {
+    /// Nothing to migrate.
+    None,
+    /// Repatch this pristine image instead of the already-patched live one.
+    FromBackup(PathBuf),
+    /// Another manager patched the image and no pristine copy is available.
+    Blocked(String),
+}
+
+#[cfg(target_os = "android")]
+fn ramdisk_of(path: &Path) -> Option<Cpio> {
+    let data = std::fs::read(path).ok()?;
+    let image = BootImage::parse(&data).ok()?;
+    let ramdisk = image.get_blocks().get_ramdisk()?;
+    extract_ramdisk(ramdisk).ok().map(|(cpio, _)| cpio)
+}
+
+#[cfg(target_os = "android")]
+fn is_pristine_image(path: &Path) -> bool {
+    let Some(cpio) = ramdisk_of(path) else {
+        return false;
+    };
+    !cpio.exists("drdc.ko") && !cpio.exists("kernelsu.ko") && !cpio.is_magisk_patched()
+}
+
+/// Detect a boot image that another root manager already patched.
+///
+/// Flashing our patch on top of such an image produces a ramdisk with two overlays; at
+/// boot the older manager's init usually wins, so the user "successfully" installs DRDC
+/// and still ends up in the old root manager. Patch the pristine backup instead.
+#[cfg(target_os = "android")]
+fn detect_takeover(live: &Path) -> Takeover {
+    let Some(cpio) = ramdisk_of(live) else {
+        return Takeover::None;
+    };
+    let ksu_patched = cpio.exists("kernelsu.ko");
+    let drdc_patched = cpio.exists("drdc.ko");
+    let magisk_patched = cpio.is_magisk_patched();
+    if !ksu_patched && !magisk_patched {
+        return Takeover::None;
+    }
+    // A pure DRDC image is already the newest layer.
+    if drdc_patched && !ksu_patched {
+        return Takeover::None;
+    }
+
+    // Prefer the exact image the live ramdisk points at. KernelSU stores the sha1 of the
+    // image it replaced in `stock_image.sha1`, so this identifies the right backup even if
+    // several of them accumulated across OTAs.
+    let pointed_sha = cpio
+        .entry_by_name(BACKUP_FILENAME)
+        .and_then(CpioEntry::data)
+        .and_then(|v| std::str::from_utf8(v).ok())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned);
+    if let Some(sha) = pointed_sha {
+        for dir in [
+            "/data/adb/ksu",
+            "/data/adb/ksu_next",
+            "/data/adb/ksunext",
+            "/data/adb/sukisu",
+        ] {
+            let candidate = PathBuf::from(format!("{dir}/ksu_backup_{sha}"));
+            if candidate.is_file() && is_pristine_image(&candidate) {
+                return Takeover::FromBackup(candidate);
+            }
+        }
+    }
+
+    let mut best: Option<(std::time::SystemTime, PathBuf)> = None;
+    for dir in [
+        "/data/adb/ksu",
+        "/data/adb/ksu_next",
+        "/data/adb/ksunext",
+        "/data/adb/sukisu",
+    ] {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            if !name.starts_with("ksu_backup_") || !is_pristine_image(&path) {
+                continue;
+            }
+            let mtime = entry
+                .metadata()
+                .and_then(|m| m.modified())
+                .unwrap_or(std::time::UNIX_EPOCH);
+            if best.as_ref().is_none_or(|(t, _)| mtime > *t) {
+                best = Some((mtime, path));
+            }
+        }
+    }
+
+    // Magisk keeps a copy of the stock image it replaced.
+    if best.is_none() {
+        let magisk = Path::new("/data/adb/magisk/stock_boot.img");
+        if magisk.is_file() && is_pristine_image(magisk) {
+            best = Some((std::time::UNIX_EPOCH, magisk.to_path_buf()));
+        }
+    }
+
+    match best {
+        Some((_, path)) => Takeover::FromBackup(path),
+        None => Takeover::Blocked(
+            "boot image is already patched by another root manager (KernelSU/Magisk) \
+             and no pristine backup was found. Install with \"SelectFile\" using a stock \
+             init_boot.img, or restore the stock image in the other manager first."
+                .to_string(),
+        ),
+    }
+}
+
 pub fn patch(args: BootPatchArgs) -> Result<()> {
     let inner = move || {
         let BootPatchArgs {
@@ -664,6 +783,31 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         println!(include_str!("banner"));
 
         #[cfg(target_os = "android")]
+        let is_replace_kernel = kernel.is_some();
+
+        #[cfg(target_os = "android")]
+        let image = if !ota && flash && image.is_none() {
+            // Direct install: never stack our patch on top of another root manager.
+            let live = auto_boot_partition_path(
+                &get_current_kmi().unwrap_or_default(),
+                false,
+                is_replace_kernel,
+                &partition,
+            );
+            match detect_takeover(&live) {
+                Takeover::FromBackup(stock) => {
+                    println!("- Detected a boot image patched by another root manager");
+                    println!("- Taking over from pristine backup: {}", stock.display());
+                    Some(stock)
+                }
+                Takeover::Blocked(message) => bail!("{message}"),
+                Takeover::None => None,
+            }
+        } else {
+            image
+        };
+
+        #[cfg(target_os = "android")]
         let patch_file = image.is_some();
 
         #[cfg(target_os = "android")]
@@ -671,6 +815,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             ensure_gki_kernel()?;
         }
 
+        #[cfg(not(target_os = "android"))]
         let is_replace_kernel = kernel.is_some();
 
         if ramdisk && is_replace_kernel {
@@ -921,7 +1066,17 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         #[cfg(target_os = "android")]
         if flash {
             println!("- Flashing new boot image");
-            let bootdevice = boot_image_file.display().to_string();
+            // When the image came from -b, `boot_image_file` is a regular file and not the
+            // device node. Flashing must still target the active partition, otherwise the
+            // command would overwrite the source image and leave the device untouched.
+            let bootdevice = if patch_file {
+                auto_boot_partition_path(&kmi, ota, is_replace_kernel, &partition)
+                    .display()
+                    .to_string()
+            } else {
+                boot_image_file.display().to_string()
+            };
+            println!("- Target partition: {bootdevice}");
             flash_partition(&bootdevice, &new_boot_bytes)?;
             if ota {
                 post_ota()?;
