@@ -18,6 +18,7 @@
 #include "runtime/drdcd.h"
 #include "runtime/drdcd_boot.h"
 #include "feature/sulog.h"
+#include "feature/anti_lpe.h"
 #include "supercall/supercall.h"
 #include "drdc.h"
 #include "infra/file_wrapper.h"
@@ -167,6 +168,7 @@ int __init drdc_init(void)
         drdc_load_allow_list();
 
         drdc_syscall_hook_manager_init();
+        drdc_anti_lpe_init();
 
         drdc_throne_tracker_init();
         drdc_observer_init();
@@ -184,6 +186,7 @@ int __init drdc_init(void)
 
     } else {
         drdc_syscall_hook_manager_init();
+        drdc_anti_lpe_init();
 
         drdc_allowlist_init();
 
@@ -207,6 +210,7 @@ int __init drdc_init(void)
 void __exit drdc_exit(void)
 {
     // Phase 1: Stop all hooks first to prevent new callbacks
+    drdc_anti_lpe_exit();
     drdc_syscall_hook_manager_exit();
 
     drdc_supercalls_exit();

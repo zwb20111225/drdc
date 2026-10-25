@@ -6,6 +6,7 @@
 
 #include "policy/allowlist.h"
 #include "policy/feature.h"
+#include "feature/anti_lpe.h"
 #include "klog.h" // IWYU pragma: keep
 #include "runtime/drdcd_boot.h"
 #include "runtime/drdcd.h"
@@ -28,6 +29,7 @@ void on_post_fs_data(void)
     pr_info("on_post_fs_data!\n");
 
     drdc_load_allow_list();
+    drdc_anti_lpe_apply_boot_flag();
     drdc_observer_init();
     // Sanity check for safe mode only needs early-boot input samples.
     drdc_stop_input_hook_runtime();
