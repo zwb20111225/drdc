@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -37,6 +38,7 @@ import androidx.compose.material3.Icon as MaterialIcon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +78,7 @@ internal fun FilesDialogHost(viewModel: FilesViewModel, palette: FilesPalette) {
         is FilesDialog.Extract -> ExtractDialog(viewModel, palette, dialog)
         is FilesDialog.Apk -> ApkDialog(viewModel, palette, dialog)
         is FilesDialog.Editor -> EditorDialog(viewModel, palette, dialog)
+        is FilesDialog.Exec -> ExecDialog(viewModel, palette, dialog)
     }
     TaskOverlay(palette)
 }
@@ -497,6 +500,80 @@ private fun PropertyRow(palette: FilesPalette, label: String, value: String) {
             color = palette.onSurface,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+@Composable
+private fun ExecDialog(viewModel: FilesViewModel, palette: FilesPalette, spec: FilesDialog.Exec) {
+    val scroll = rememberScrollState()
+    LaunchedEffect(spec.lines.size) {
+        scroll.scrollTo(Int.MAX_VALUE)
+    }
+    OverlayScrim(palette, viewModel::dismissDialog) {
+        DialogCard(palette, spec.entry.name) {
+            MaterialText(
+                text = "$ ${spec.command}",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                color = palette.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 160.dp, max = 320.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(palette.background)
+                    .verticalScroll(scroll)
+                    .padding(10.dp),
+            ) {
+                SelectionContainer {
+                    Column {
+                        if (spec.lines.isEmpty()) {
+                            MaterialText(
+                                text = stringResource(R.string.files_exec_running),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
+                                color = palette.onSurfaceVariant,
+                            )
+                        }
+                        spec.lines.forEach { line ->
+                            MaterialText(
+                                text = line,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 10.sp,
+                                color = palette.onSurface,
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            val status = when {
+                spec.running -> stringResource(R.string.files_exec_running)
+                spec.exitCode == -1 -> stringResource(R.string.files_exec_stopped)
+                else -> stringResource(R.string.files_exec_finished, spec.exitCode ?: 0)
+            }
+            MaterialText(
+                text = status,
+                fontSize = 12.sp,
+                color = when {
+                    spec.running -> palette.primary
+                    spec.exitCode == 0 -> palette.primary
+                    else -> palette.error
+                },
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                if (spec.running) {
+                    FilesButton(palette, stringResource(R.string.files_exec_stop), viewModel::stopExec)
+                    Spacer(Modifier.width(8.dp))
+                }
+                FilesButton(palette, stringResource(android.R.string.ok), viewModel::dismissDialog, primary = true)
+            }
+        }
     }
 }
 

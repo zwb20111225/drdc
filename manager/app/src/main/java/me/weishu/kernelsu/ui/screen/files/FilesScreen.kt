@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
@@ -576,6 +577,14 @@ private fun SelectionBar(viewModel: FilesViewModel, palette: FilesPalette) {
                 viewModel.openDelete()
             }
             if (selected.size == 1) {
+                ActionChip(palette, Icons.AutoMirrored.Rounded.InsertDriveFile, stringResource(R.string.files_open)) {
+                    viewModel.openSelected()
+                }
+                if (!selected.first().isDirectory) {
+                    ActionChip(palette, Icons.Rounded.PlayArrow, stringResource(R.string.files_execute)) {
+                        viewModel.runFile(selected.first())
+                    }
+                }
                 ActionChip(palette, Icons.Rounded.DriveFileRenameOutline, stringResource(R.string.files_rename)) {
                     viewModel.openRename()
                 }

@@ -31,13 +31,12 @@ data class HomeUiState(
     val showGkiWarning: Boolean
         get() = ksuVersion != null && lkmMode == false
 
+    // The manager APK and the shipped LKM are built from the same tree, so their
+    // commit-count versions differ after every app-only update. That made this banner
+    // permanent for anyone who did not reflash the kernel. Real compatibility is tracked
+    // by the UAPI comparison above (requiresNewKernel), so do not nag here.
     val showLkmUpdate: Boolean
-        get() = isManager &&
-                lkmMode == true &&
-                isLkmBundled &&
-                ksuVersion?.toLong() != currentManagerVersionCode &&
-                !requiresNewKernel &&
-                !requiresNewManager
+        get() = false
 
     // Jailbreak mode runs on locked bootloaders, so flashing a boot image would brick the device.
     val canInstallKernelUpdate: Boolean

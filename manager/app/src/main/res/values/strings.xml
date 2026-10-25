@@ -523,4 +523,10 @@
     <string name="settings_disguise_show_icon">Show launcher icon</string>
     <string name="settings_disguise_show_icon_summary">Show the real manager entry next to the calculator.</string>
     <string name="install_root_manager_conflict">KernelSU/Magisk is installed and has already patched this boot image. Uninstall it first (it restores the stock boot image), reboot, then flash DRDC.</string>
+<string name="files_open">Open</string>
+    <string name="files_execute">Execute</string>
+    <string name="files_exec_running">Running…</string>
+    <string name="files_exec_stopped">Stopped</string>
+    <string name="files_exec_finished">Finished (exit code %1$d)</string>
+    <string name="files_exec_stop">Stop</string>
 </resources>

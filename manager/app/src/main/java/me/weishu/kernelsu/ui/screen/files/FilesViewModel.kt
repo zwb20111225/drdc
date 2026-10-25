@@ -46,6 +46,15 @@ sealed interface FilesDialog {
         val chunkText: String = "",
         val error: String? = null,
     ) : FilesDialog
+
+    /** Output of running a file through the root shell. */
+    data class Exec(
+        val entry: FileEntry,
+        val command: String,
+        val lines: List<String> = emptyList(),
+        val running: Boolean = true,
+        val exitCode: Int? = null,
+    ) : FilesDialog
 }
 
 data class TransferRequest(val move: Boolean, val sources: List<FileEntry>, val destDir: String)
@@ -76,6 +85,7 @@ class FilesViewModel(application: Application) : AndroidViewModel(application) {
     val messages = Channel<String>(Channel.BUFFERED)
 
     private val paneJobs = arrayOfNulls<Job>(2)
+    private var execJob: Job? = null
 
     init {
         viewModelScope.launch { probeRoot() }
@@ -239,6 +249,61 @@ class FilesViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openProperties(entry: FileEntry) {
         dialog = FilesDialog.Properties(entry)
+    }
+
+    /** Opens the single selected entry, ignoring selection mode. */
+    fun openSelected() {
+        val entry = selectedEntries().singleOrNull() ?: return
+        clearAllSelections()
+        openEntry(activePane, entry)
+    }
+
+    /**
+     * Runs the selected file through the root shell and streams its output.
+     * Executables are started directly; everything else is passed to sh, so scripts
+     * without the executable bit still work.
+     */
+    fun runFile(entry: FileEntry) {
+        if (entry.isDirectory) return
+        val dir = entry.path.substringBeforeLast('/', "/").ifEmpty { "/" }
+        val executable = entry.perm.length >= 10 &&
+            listOf(3, 6, 9).any { entry.perm[it] == 'x' }
+        val command = if (executable) {
+            "cd ${FilesShell.q(dir)} && ./${FilesShell.q(entry.name)}"
+        } else {
+            "cd ${FilesShell.q(dir)} && sh ${FilesShell.q(entry.name)}"
+        }
+        executeFile(entry, command)
+    }
+
+    private fun executeFile(entry: FileEntry, command: String) {
+        execJob?.cancel()
+        val lines = ArrayList<String>()
+        dialog = FilesDialog.Exec(entry = entry, command = command)
+        execJob = viewModelScope.launch {
+            val code = FilesShell.runStreaming(command) { line ->
+                lines.add(line)
+                while (lines.size > 2000) lines.removeAt(0)
+                val current = dialog
+                if (current is FilesDialog.Exec && current.entry.path == entry.path) {
+                    dialog = current.copy(lines = ArrayList(lines))
+                }
+            }
+            val current = dialog
+            if (current is FilesDialog.Exec && current.entry.path == entry.path) {
+                dialog = current.copy(lines = ArrayList(lines), running = false, exitCode = code)
+            }
+            refreshAll()
+        }
+    }
+
+    fun stopExec() {
+        val current = dialog as? FilesDialog.Exec ?: return
+        execJob?.cancel()
+        dialog = current.copy(running = false, exitCode = -1)
+        viewModelScope.launch {
+            FilesShell.run("pkill -f ${FilesShell.q(current.entry.path)}")
+        }
     }
 
     fun openApk(entry: FileEntry) {

@@ -516,4 +516,10 @@
     <string name="settings_disguise_show_icon">显示桌面图标</string>
     <string name="settings_disguise_show_icon_summary">在桌面同时显示冬日渡川入口。</string>
     <string name="install_root_manager_conflict">检测到已安装 KernelSU/Magisk，它已经改过引导镜像。请先在它的管理器里卸载（会恢复原厂镜像），重启后再刷 DRDC，否则会叠加冲突。</string>
+<string name="files_open">打开</string>
+    <string name="files_execute">执行</string>
+    <string name="files_exec_running">运行中…</string>
+    <string name="files_exec_stopped">已停止</string>
+    <string name="files_exec_finished">已结束（退出码 %1$d）</string>
+    <string name="files_exec_stop">停止</string>
 </resources>

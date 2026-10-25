@@ -3,6 +3,7 @@ package me.weishu.kernelsu.ui.screen.files
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
+import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ShellUtils
 import com.topjohnwu.superuser.io.SuFileInputStream
@@ -109,6 +110,32 @@ object FilesShell {
     suspend fun probeRoot(): Boolean {
         val result = run("id")
         return result.ok && result.out.any { it.contains("uid=0") }
+    }
+
+    /**
+     * Runs a command and forwards every output line as it arrives. Used by the file
+     * manager's "execute" action so long-running scripts show progress instead of
+     * blocking until they finish.
+     */
+    suspend fun runStreaming(command: String, onLine: (String) -> Unit): Int = withContext(Dispatchers.IO) {
+        try {
+            val shell = getRootShell()
+            val out = object : CallbackList<String?>() {
+                override fun onAddElement(s: String?) {
+                    s?.let(onLine)
+                }
+            }
+            val err = object : CallbackList<String?>() {
+                override fun onAddElement(s: String?) {
+                    s?.let(onLine)
+                }
+            }
+            shell.newJob().add(command).to(out, err).exec().code
+        } catch (e: Throwable) {
+            Log.w(TAG, "stream command failed: $command", e)
+            onLine(e.message ?: "shell error")
+            -1
+        }
     }
 
     suspend fun pathExists(path: String): Boolean = run("test -e ${q(path)}").ok
