@@ -94,7 +94,9 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
         Diagnostics.mark(this, "application.ready")
 
         // Some kernels lose the allowlist across reboots; re-apply the grants we saved.
-        Thread({ runCatching { GrantBackup.restore(this) } }, "drdc-grants").apply { isDaemon = true }.start()
+        // Restore grants before the UI loads so the superuser list does not appear empty.
+        // These are Natives ioctls (no su), so this is cheap enough for onCreate.
+        runCatching { GrantBackup.restore(this) }
 
         // Recover modules that were stuck in modules_update / never got their .remove
         // marker processed because post-fs-data did not run at boot.
