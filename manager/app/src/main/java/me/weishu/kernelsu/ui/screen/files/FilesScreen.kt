@@ -364,7 +364,10 @@ private fun FilesPane(
                     CenterText(palette, stringResource(R.string.files_empty_dir))
 
                 else -> LazyColumn(Modifier.fillMaxSize()) {
-                    items(pane.entries, key = { it.name }) { entry ->
+                    // No explicit key: a directory listing can contain duplicate names
+                    // (bind mounts, case-insensitive views) and LazyColumn throws on a
+                    // repeated key, which used to kill the app when opening this page.
+                    items(pane.entries) { entry ->
                         FileRow(viewModel, index, entry, pane, palette)
                     }
                 }

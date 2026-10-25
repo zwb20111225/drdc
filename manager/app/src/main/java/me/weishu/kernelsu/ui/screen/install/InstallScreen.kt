@@ -20,8 +20,10 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ui.LocalUiMode
@@ -70,7 +72,7 @@ fun InstallScreen() {
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }
     val defaultPartition by produceState(initialValue = "") { value = getDefaultPartition() }
-    val rootAvailable by produceState(initialValue = false) { value = rootAvailable() }
+    val rootAvailable by produceState(initialValue = false) { value = withContext(Dispatchers.IO) { rootAvailable() } }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
     val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
 

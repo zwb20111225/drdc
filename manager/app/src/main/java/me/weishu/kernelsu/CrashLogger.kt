@@ -31,7 +31,9 @@ class CrashLogger(
 
     override fun uncaughtException(thread: Thread, throwable: Throwable) {
         Log.e(TAG, "uncaught exception on ${thread.name}", throwable)
-        val stack = throwable.stackTraceToString().take(32 * 1024)
+        val stack = runCatching { throwable.stackTraceToString() }
+            .getOrElse { throwable.toString() }
+            .take(32 * 1024)
         // Write locally first: the network may be unreachable and the process can be killed
         // while an upload is still in flight.
         runCatching { writePending(thread, stack) }

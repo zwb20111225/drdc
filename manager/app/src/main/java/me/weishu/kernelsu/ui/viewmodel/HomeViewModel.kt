@@ -30,7 +30,10 @@ class HomeViewModel(
     private val settingsRepo: SettingsRepository = SettingsRepositoryImpl()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(buildState())
+    // Building the real state talks to su, which can take seconds. Never do that in a
+    // ViewModel constructor (it runs on the main thread): show a cheap state first and
+    // fill in the rest from refresh() on Dispatchers.IO.
+    private val _uiState = MutableStateFlow(buildState(probeRoot = false))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     fun refresh() {
@@ -44,14 +47,14 @@ class HomeViewModel(
         }
     }
 
-    private fun buildState(): HomeUiState {
+    private fun buildState(probeRoot: Boolean = true): HomeUiState {
         val kernelVersion = getKernelVersion()
         val isManager = Natives.isManager
         val ksuVersion = if (isManager) Natives.version else null
         val kernelUAPIVersion = if (isManager) Natives.kernelUAPIVersion else null
         val managerUAPIVersion = Natives.managerUAPIVersion
         val lkmMode = ksuVersion?.let { if (kernelVersion.isGKI()) Natives.isLkmMode else null }
-        val isRootAvailable = rootAvailable()
+        val isRootAvailable = if (probeRoot) rootAvailable() else false
         val managerVersion = getManagerVersion(ksuApp)
 
         return HomeUiState(

@@ -48,6 +48,10 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
         )
         ksuApp = this
 
+        // Keep a trace of how far startup gets, and report the previous run's native
+        // crash / logcat crash buffer on the next launch.
+        Diagnostics.start(this)
+
         if (!isUserUnlocked()) {
             return
         }
@@ -84,6 +88,7 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
                 }.build()
 
         KeyGuard.init(this)
+        Diagnostics.mark(this, "application.ready")
     }
 
     override val viewModelStore: ViewModelStore

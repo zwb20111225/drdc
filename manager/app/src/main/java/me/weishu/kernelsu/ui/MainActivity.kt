@@ -50,18 +50,22 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.ui.component.bottombar.BottomBar
 import me.weishu.kernelsu.ui.component.bottombar.MainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.NavigationBadgeState
 import me.weishu.kernelsu.ui.component.bottombar.SideRail
 import me.weishu.kernelsu.ui.component.bottombar.rememberMainPagerState
+import me.weishu.kernelsu.Diagnostics
 import me.weishu.kernelsu.PendingCrash
 import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
@@ -128,6 +132,7 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
+        Diagnostics.mark(this, "ui.onCreate")
         val splashScreen = installSplashScreen()
         splashStartedAt = SystemClock.uptimeMillis()
         super.onCreate(savedInstanceState)
@@ -136,7 +141,15 @@ class MainActivity : ComponentActivity() {
         }
 
         val isManager = Natives.isManager
-        if (isManager && Natives.kernelUAPIVersion == Natives.managerUAPIVersion) install()
+        if (isManager && Natives.kernelUAPIVersion == Natives.managerUAPIVersion) {
+            // Refreshing the userspace daemon needs a root shell. Doing it synchronously
+            // here blocked the UI thread; right after root became available that could
+            // deadlock the app on every launch. Keep it off the main thread.
+            lifecycleScope.launch(Dispatchers.IO) {
+                runCatching { install() }
+                    .onFailure { android.util.Log.w("DRDC", "daemon refresh failed", it) }
+            }
+        }
 
         if (savedInstanceState == null) intent?.let { intentChannel.trySend(it) }
 
@@ -144,6 +157,8 @@ class MainActivity : ComponentActivity() {
             val viewModel = viewModel<MainActivityViewModel>()
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val selectedMainPage by viewModel.selectedMainPage.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) { Diagnostics.mark(this@MainActivity, "ui.firstComposition") }
+            LaunchedEffect(selectedMainPage) { Diagnostics.mark(this@MainActivity, "ui.page=" + selectedMainPage) }
             val appSettings = uiState.appSettings
             val uiMode = uiState.uiMode
             val darkMode = appSettings.colorMode.isDark || (appSettings.colorMode.isSystem && isSystemInDarkTheme())

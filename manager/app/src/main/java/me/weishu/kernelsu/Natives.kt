@@ -6,7 +6,6 @@ import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import me.weishu.kernelsu.Natives.Profile.RootProfileFlag
-import me.weishu.kernelsu.ui.util.rootAvailable
 
 /**
  * @author weishu
@@ -127,7 +126,10 @@ object Natives {
         external get
 
     fun isFullFeatured(): Boolean {
-        return isManager && kernelUAPIVersion == managerUAPIVersion && rootAvailable()
+        // Do not spawn a root shell here: this is read from composition (bottom bar / home)
+        // and su can block for up to 20s, which froze the UI thread. A recognized manager
+        // with a matching kernel UAPI can always obtain root.
+        return isManager && kernelUAPIVersion == managerUAPIVersion && version > 0
     }
 
     @Keep
