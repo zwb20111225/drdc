@@ -322,4 +322,9 @@
 <string name="files_exec_input_hint">腳本等待選擇時在這裡輸入…</string>
     <string name="files_exec_send">傳送</string>
     <string name="download_blessing">祝各位，把把吃豆，永遠查不到～</string>
+<string name="settings_antilpe">核心防護（GhostLock）</string>
+    <string name="settings_antilpe_summary">阻止一般應用透過 PI futex 提權（CVE-2026-43499）</string>
+    <string name="settings_antilpe_need_kernel">目前核心尚未包含防護，刷入新版 LKM 後生效</string>
+    <string name="settings_antilpe_failed">切換失敗，請確認已刷入新版核心模組</string>
+    <string name="settings_uninstall_permanent_warning">真的要走？解除安裝管理器不會失去 Root，但會刪除管理器資料、已安裝模組和授權記錄。確定解除安裝冬日渡川嗎？</string>
 </resources>

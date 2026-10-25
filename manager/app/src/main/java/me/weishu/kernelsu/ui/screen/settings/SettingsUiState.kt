@@ -64,6 +64,10 @@ data class SettingsUiState(
     // Soft Reboot
     val useSoftReboot: Boolean = false,
 
+    // PI-futex filter (CVE-2026-43499)
+    val antiLpeEnabled: Boolean = true,
+    val antiLpeSupported: Boolean = false,
+
     // Disguise
     val disguisePasscode: String = DisguiseConfig.DEFAULT_PASSCODE,
     val showLauncherIcon: Boolean = false
@@ -86,6 +90,7 @@ data class SettingsScreenActions(
     val onSetEnableWebDebugging: (Boolean) -> Unit,
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
+    val onSetAntiLpeEnabled: (Boolean) -> Unit,
     val onSetDisguisePasscode: (String) -> Unit,
     val onSetShowLauncherIcon: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,

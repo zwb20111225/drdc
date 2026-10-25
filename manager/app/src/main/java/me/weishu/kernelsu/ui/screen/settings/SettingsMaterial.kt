@@ -336,6 +336,20 @@ fun SettingPagerMaterial(
                                 onCheckedChange = actions.onSetUseSoftReboot
                             )
                         },
+                        {
+                            val antiLpeSummary = if (uiState.antiLpeSupported) {
+                                stringResource(id = R.string.settings_antilpe_summary)
+                            } else {
+                                stringResource(id = R.string.settings_antilpe_need_kernel)
+                            }
+                            SegmentedSwitchItem(
+                                icon = Icons.Filled.Security,
+                                title = stringResource(id = R.string.settings_antilpe),
+                                summary = antiLpeSummary,
+                                checked = uiState.antiLpeEnabled,
+                                onCheckedChange = actions.onSetAntiLpeEnabled
+                            )
+                        },
                     )
                 )
 

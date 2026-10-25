@@ -170,6 +170,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean(KEY_USE_SOFT_REBOOT, false)
         set(value) = prefs.edit { putBoolean(KEY_USE_SOFT_REBOOT, value) }
 
+    override var antiLpeEnabled: Boolean
+        get() = prefs.getBoolean("anti_lpe", true)
+        set(value) = prefs.edit { putBoolean("anti_lpe", value) }
+
     override var disguisePasscode: String
         get() = prefs.getString(DisguiseConfig.KEY_DISGUISE_PASSCODE, null)
             ?.takeIf { DisguiseConfig.isValidPasscode(it) }

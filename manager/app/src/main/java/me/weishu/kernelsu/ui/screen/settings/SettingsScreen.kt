@@ -60,6 +60,7 @@ fun SettingPager(
         onSetEnableWebDebugging = viewModel::setEnableWebDebugging,
         onSetAutoJailbreak = viewModel::setAutoJailbreak,
         onSetUseSoftReboot = viewModel::setUseSoftReboot,
+        onSetAntiLpeEnabled = viewModel::setAntiLpeEnabled,
         onSetDisguisePasscode = viewModel::setDisguisePasscode,
         onSetShowLauncherIcon = viewModel::setShowLauncherIcon,
         onOpenAbout = { navigator.push(Route.About) },

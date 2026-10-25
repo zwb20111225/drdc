@@ -18,6 +18,7 @@ import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.ui.screen.settings.SettingsUiState
+import me.weishu.kernelsu.ui.util.AntiLpe
 import me.weishu.kernelsu.ui.theme.ColorMode
 
 class SettingsViewModel(
@@ -94,6 +95,16 @@ class SettingsViewModel(
             val disguisePasscode = repo.disguisePasscode
             val showLauncherIcon = repo.showLauncherIcon
             val isLateLoadMode = Natives.isLateLoadMode
+            val antiLpeSupported = withContext(Dispatchers.IO) { AntiLpe.isSupported() }
+            val antiLpeKernel = if (antiLpeSupported) {
+                withContext(Dispatchers.IO) { AntiLpe.isEnabled() }
+            } else {
+                null
+            }
+            val antiLpeEnabled = antiLpeKernel ?: repo.antiLpeEnabled
+            if (antiLpeKernel != null && antiLpeKernel != repo.antiLpeEnabled) {
+                repo.antiLpeEnabled = antiLpeKernel
+            }
 
             _uiState.update {
                 it.copy(
@@ -135,6 +146,8 @@ class SettingsViewModel(
                     disguisePasscode = disguisePasscode,
                     showLauncherIcon = showLauncherIcon,
                     isLateLoadMode = isLateLoadMode,
+                    antiLpeEnabled = antiLpeEnabled,
+                    antiLpeSupported = antiLpeSupported,
                 )
             }
         }
@@ -356,6 +369,29 @@ class SettingsViewModel(
     fun setShowLauncherIcon(enabled: Boolean) {
         repo.showLauncherIcon = enabled
         _uiState.update { it.copy(showLauncherIcon = enabled) }
+    }
+
+    fun setAntiLpeEnabled(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val supported = AntiLpe.isSupported()
+            if (!supported) {
+                // Keep the choice so it applies after the new kernel module is flashed.
+                repo.antiLpeEnabled = enabled
+                _uiState.update { it.copy(antiLpeEnabled = enabled, antiLpeSupported = false) }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(ksuApp, R.string.settings_antilpe_need_kernel, Toast.LENGTH_LONG).show()
+                }
+                return@launch
+            }
+            if (AntiLpe.apply(enabled)) {
+                repo.antiLpeEnabled = enabled
+                _uiState.update { it.copy(antiLpeEnabled = enabled, antiLpeSupported = true) }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(ksuApp, R.string.settings_antilpe_failed, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     fun setSulogEnabled(enabled: Boolean) {

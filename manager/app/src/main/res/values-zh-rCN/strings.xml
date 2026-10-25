@@ -525,4 +525,9 @@
 <string name="files_exec_input_hint">脚本等待选择时在这里输入…</string>
     <string name="files_exec_send">发送</string>
     <string name="download_blessing">祝各位，把把吃豆，永远查不到～</string>
+<string name="settings_antilpe">内核防护（GhostLock）</string>
+    <string name="settings_antilpe_summary">阻止普通应用通过 PI futex 提权（CVE-2026-43499）</string>
+    <string name="settings_antilpe_need_kernel">当前内核还不包含防护，刷入新版 LKM 后生效</string>
+    <string name="settings_antilpe_failed">切换失败，请确认已经刷入新版内核模块</string>
+    <string name="settings_uninstall_permanent_warning">真要走？卸载管理器不会掉 Root，但会删除管理器数据、已安装模块和授权记录。确定卸载冬日渡川吗？</string>
 </resources>

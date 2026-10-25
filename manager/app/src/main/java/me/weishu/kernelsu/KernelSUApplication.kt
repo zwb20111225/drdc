@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import me.weishu.kernelsu.data.GrantBackup
 import me.weishu.kernelsu.data.key.KeyGuard
+import me.weishu.kernelsu.ui.util.AntiLpe
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import okhttp3.Cache
@@ -93,6 +94,15 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
 
         // Some kernels lose the allowlist across reboots; re-apply the grants we saved.
         Thread({ runCatching { GrantBackup.restore(this) } }, "drdc-grants").apply { isDaemon = true }.start()
+
+        // Apply the saved PI-futex filter preference to the running kernel.
+        Thread({
+            runCatching {
+                if (Natives.isManager && AntiLpe.isSupported()) {
+                    AntiLpe.apply(SettingsRepositoryImpl().antiLpeEnabled)
+                }
+            }
+        }, "drdc-antilpe").apply { isDaemon = true }.start()
     }
 
     override val viewModelStore: ViewModelStore

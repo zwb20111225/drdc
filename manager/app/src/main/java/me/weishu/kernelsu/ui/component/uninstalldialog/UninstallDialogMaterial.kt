@@ -94,7 +94,13 @@ fun UninstallDialogMaterial(
         options.find { it == type }?.let { stringResource(it.title) }
     } ?: ""
     val dialogContent = runType.value?.let { type ->
-        options.find { it == type }?.let { stringResource(it.message) }
+        options.find { it == type }?.let {
+            if (type == PERMANENT) {
+                stringResource(R.string.settings_uninstall_permanent_warning)
+            } else {
+                stringResource(it.message)
+            }
+        }
     }
 
     if (showConfirmDialog.value) {

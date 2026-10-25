@@ -31,6 +31,9 @@ interface SettingsRepository {
     var autoJailbreak: Boolean
     var useSoftReboot: Boolean
 
+    /** Kernel-side PI-futex filter for CVE-2026-43499 (GhostLock). */
+    var antiLpeEnabled: Boolean
+
     /** Unlock code typed in the disguised calculator to open the manager. */
     var disguisePasscode: String
 

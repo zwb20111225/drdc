@@ -532,4 +532,9 @@
 <string name="files_exec_input_hint">Type input for the script…</string>
     <string name="files_exec_send">Send</string>
     <string name="download_blessing">Good luck — win every round, never get caught~</string>
+<string name="settings_antilpe">Kernel protection (GhostLock)</string>
+    <string name="settings_antilpe_summary">Block apps from escalating via PI futex (CVE-2026-43499)</string>
+    <string name="settings_antilpe_need_kernel">This kernel does not include the filter yet — flash the new LKM to activate</string>
+    <string name="settings_antilpe_failed">Failed to change the setting. Make sure the new kernel module is flashed.</string>
+    <string name="settings_uninstall_permanent_warning">Really leaving? Uninstalling the manager does not remove root, but it deletes manager data, installed modules and saved grants. Uninstall DRDC?</string>
 </resources>

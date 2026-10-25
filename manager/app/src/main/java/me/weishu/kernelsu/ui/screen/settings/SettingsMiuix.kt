@@ -413,6 +413,25 @@ fun SettingPagerMiuix(
                                 checked = uiState.isLateLoadMode || uiState.useSoftReboot,
                                 onCheckedChange = actions.onSetUseSoftReboot
                             )
+                            val antiLpeSummary = if (uiState.antiLpeSupported) {
+                                stringResource(id = R.string.settings_antilpe_summary)
+                            } else {
+                                stringResource(id = R.string.settings_antilpe_need_kernel)
+                            }
+                            SwitchPreference(
+                                title = stringResource(id = R.string.settings_antilpe),
+                                summary = antiLpeSummary,
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.Security,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = stringResource(id = R.string.settings_antilpe),
+                                        tint = if (uiState.antiLpeSupported) colorScheme.onBackground else colorScheme.disabledOnSecondaryVariant
+                                    )
+                                },
+                                checked = uiState.antiLpeEnabled,
+                                onCheckedChange = actions.onSetAntiLpeEnabled
+                            )
                         }
 
                         Card(
