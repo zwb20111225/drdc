@@ -32,7 +32,7 @@
 #include "hook/lsm_hook.h"
 
 static DEFINE_MUTEX(selinux_hide_mutex);
-static bool drdc_selinux_hide_enabled __read_mostly = false;
+static bool drdc_selinux_hide_enabled __read_mostly = true;
 static bool drdc_selinux_hide_running __read_mostly = false;
 
 enum sel_inos {

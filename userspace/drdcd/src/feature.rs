@@ -456,6 +456,13 @@ pub fn init_features() -> Result<()> {
     }
 
     if features.is_empty() {
+        // Fresh install: enable SELinux policy hiding by default. This has to be
+        // applied during post-fs-data while backup_sepolicy is still alive; waiting
+        // for the manager app is too late because boot_completed drops the backup.
+        features.insert(FeatureId::SelinuxHide as u32, 1);
+    }
+
+    if features.is_empty() {
         log::info!("No features to apply, skipping initialization");
         return Ok(());
     }

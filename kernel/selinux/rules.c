@@ -156,6 +156,27 @@ void apply_drdc_rules()
     drdc_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
     drdc_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
 
+    /*
+     * AVC log spoofing: detectors scan logcat/dmesg audit records for denials whose
+     * tcontext is the root domain after probing /proc/<pid>/attr/current. Those probes
+     * are supposed to fail, so keep the EACCES but suppress the audit record. The
+     * emulated SELinux policy served by selinux_hide does not contain these rules.
+     */
+    {
+        static const char *const app_domains[] = {
+            "untrusted_app", "priv_app", "platform_app", "system_app", "app_zygote",
+        };
+        static const char *const file_perms[] = { "read", "open", "getattr" };
+        int i, j;
+
+        for (i = 0; i < 5; i++) {
+            for (j = 0; j < 3; j++)
+                drdc_dontaudit(db, app_domains[i], KERNEL_SU_DOMAIN, "file", file_perms[j]);
+            drdc_dontaudit(db, app_domains[i], KERNEL_SU_DOMAIN, "dir", "search");
+            drdc_dontaudit(db, app_domains[i], KERNEL_SU_DOMAIN, "process", "getattr");
+        }
+    }
+
     rcu_assign_pointer(selinux_state.policy, pol);
     synchronize_rcu();
     drdc_destroy_sepolicy(old_pol);

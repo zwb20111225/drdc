@@ -20,6 +20,11 @@ object RootKey {
     private const val PARAM = "/sys/module/drdc/parameters/root_key_auth"
     private const val KEY_ONLY_PARAM = "/sys/module/drdc/parameters/root_key_only"
     private const val KEY_ONLY_FLAG = "/data/adb/drdc/root_key_only"
+    // A stale file named /data/adb/drdc blocks every mkdir/write below it.
+    private const val PREPARE =
+        "if [ -e /data/adb/drdc ] && [ ! -d /data/adb/drdc ]; then " +
+            "mv /data/adb/drdc /data/adb/drdc.broken.$(date +%s) 2>/dev/null; fi; " +
+            "mkdir -p /data/adb/drdc; "
     private const val ALPHABET =
         "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 
@@ -53,9 +58,9 @@ object RootKey {
     /** Applies key-only mode and makes it survive a reboot via the flag file. */
     fun applyKeyOnly(enabled: Boolean): Boolean = runCatching {
         val command = if (enabled) {
-            "mkdir -p /data/adb/drdc; touch $KEY_ONLY_FLAG; echo 1 > $KEY_ONLY_PARAM"
+            PREPARE + "touch $KEY_ONLY_FLAG; echo 1 > $KEY_ONLY_PARAM"
         } else {
-            "mkdir -p /data/adb/drdc; rm -f $KEY_ONLY_FLAG; echo 0 > $KEY_ONLY_PARAM"
+            PREPARE + "rm -f $KEY_ONLY_FLAG; echo 0 > $KEY_ONLY_PARAM"
         }
         val value = ShellUtils.fastCmd(getRootShell(), "$command 2>/dev/null; cat $KEY_ONLY_PARAM 2>/dev/null").trim()
         if (enabled) value == "Y" || value == "1" else value == "N" || value == "0"
@@ -66,7 +71,7 @@ object RootKey {
         val key = generate()
         // The alphabet is alphanumeric, so the value is safe to interpolate.
         val command =
-            "umask 077; mkdir -p /data/adb/drdc; " +
+            "umask 077; " + PREPARE +
                 "printf '%s' '$key' > $PATH; chmod 600 $PATH; cat $PATH"
         val out = ShellUtils.fastCmd(getRootShell(), command).trim()
         out.takeIf { it == key }

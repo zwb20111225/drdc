@@ -82,6 +82,11 @@ object Diagnostics {
         } else {
             ""
         }
+        val featureCfg = if (rooted()) {
+            shell(true, "ls -l /data/adb/drdc/.feature_config 2>/dev/null", 5)
+        } else {
+            ""
+        }
         val trace = previousTrace.orEmpty()
         if (crash.isBlank() && tombstone.isBlank() && trace.isBlank()) return
 
@@ -96,6 +101,9 @@ object Diagnostics {
             appendLine("modules  : ${modules.replace('\n', ' ').ifBlank { "none" }}")
             appendLine("drdcDir  : ${drdcDir.replace('\n', ' ').ifBlank { "missing" }}")
             appendLine("rootKey  : ${rootKey.replace('\n', ' ').ifBlank { "missing" }}")
+            appendLine("featureCfg: ${featureCfg.replace('\n', ' ').ifBlank { "missing" }}")
+            appendLine("kernel   : version=${runCatching { Natives.version }.getOrDefault(0)} uapi=${runCatching { Natives.kernelUAPIVersion }.getOrDefault(-1)} managerUapi=${Natives.managerUAPIVersion}")
+            appendLine("selinux  : hide=${runCatching { Natives.isSelinuxHideEnabled() }.getOrDefault(false)}")
             appendLine("manager  : ${runCatching { Natives.isManager }.getOrDefault(false)} / lateLoad=${runCatching { Natives.isLateLoadMode }.getOrDefault(false)}")
             appendLine("rootShell: ${runCatching { me.weishu.kernelsu.ui.util.rootAvailable() }.getOrDefault(false)}")
             appendLine("antiLpe  : ${runCatching { java.io.File("/sys/module/drdc/parameters/anti_lpe").readText().trim() }.getOrNull() ?: "?"}")

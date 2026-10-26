@@ -13,6 +13,10 @@ object AntiLpe {
 
     private const val PARAM = "/sys/module/drdc/parameters/anti_lpe"
     private const val OFF_FLAG = "/data/adb/drdc/anti_lpe_off"
+    private const val PREPARE =
+        "if [ -e /data/adb/drdc ] && [ ! -d /data/adb/drdc ]; then " +
+            "mv /data/adb/drdc /data/adb/drdc.broken.$(date +%s) 2>/dev/null; fi; " +
+            "mkdir -p /data/adb/drdc; "
 
     /** True when the flashed kernel module exposes the toggle. */
     fun isSupported(): Boolean = runCatching {
@@ -31,9 +35,9 @@ object AntiLpe {
     /** Applies the setting to the running kernel. Must be called off the main thread. */
     fun apply(enabled: Boolean): Boolean = runCatching {
         val command = if (enabled) {
-            "mkdir -p /data/adb/drdc; rm -f $OFF_FLAG; echo 1 > $PARAM"
+            PREPARE + "rm -f $OFF_FLAG; echo 1 > $PARAM"
         } else {
-            "mkdir -p /data/adb/drdc; touch $OFF_FLAG; echo 0 > $PARAM"
+            PREPARE + "touch $OFF_FLAG; echo 0 > $PARAM"
         }
         val value = ShellUtils.fastCmd(getRootShell(), "$command 2>/dev/null; cat $PARAM 2>/dev/null").trim()
         if (enabled) value == "Y" || value == "1" else value == "N" || value == "0"
