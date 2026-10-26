@@ -30,6 +30,9 @@ import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon as MaterialIcon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text as MaterialText
@@ -139,10 +142,60 @@ internal fun keysPalette(): KeysPalette {
 fun KeyGate(content: @Composable () -> Unit) {
     val state by KeyGuard.state.collectAsStateWithLifecycle()
     when (state) {
-        is KeyState.Active -> content()
+        is KeyState.Active -> {
+            val context = LocalContext.current
+            var askUsername by remember {
+                mutableStateOf(UserProfile.username(context).isBlank())
+            }
+            if (askUsername) {
+                UsernamePrompt(
+                    onSave = { name ->
+                        KeyGuard.setUsername(name)
+                        askUsername = false
+                    },
+                    onDismiss = { askUsername = false },
+                )
+            }
+            content()
+        }
+
         KeyState.Checking -> ActivationScreen(KeyState.Checking)
         is KeyState.NeedActivation -> ActivationScreen(state)
     }
+}
+
+@Composable
+private fun UsernamePrompt(
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    val valid = name.trim().length in 1..20
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { MaterialText(stringResource(R.string.keys_username)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { if (it.length <= 20) name = it },
+                label = { MaterialText(stringResource(R.string.keys_username_hint)) },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                enabled = valid,
+                onClick = { onSave(name.trim()) },
+            ) {
+                MaterialText(stringResource(R.string.keys_username_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                MaterialText(stringResource(R.string.keys_username_later))
+            }
+        },
+    )
 }
 
 @Composable

@@ -33,6 +33,7 @@ internal data class HeartbeatRequest(
     val token: String,
     val machine_id: String,
     val app_version: String,
+    val username: String,
     val nonce: String,
     val ts: Long,
     val sign: String,
@@ -92,6 +93,7 @@ object KeyApi {
         client: OkHttpClient,
         token: String,
         machineId: String,
+        username: String,
     ): KeyResponse = withContext(Dispatchers.IO) {
         val ts = System.currentTimeMillis() / 1000
         val nonce = newNonce()
@@ -99,6 +101,7 @@ object KeyApi {
             token = token,
             machine_id = machineId,
             app_version = appVersion,
+            username = username,
             nonce = nonce,
             ts = ts,
             sign = hmacHex("$token|$machineId|$appVersion|$nonce|$ts"),

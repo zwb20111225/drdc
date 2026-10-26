@@ -91,7 +91,7 @@ object KeyGuard {
         if (due && (force || now - lastAttemptAt >= RETRY_GAP_MS)) {
             lastAttemptAt = now
             try {
-                val response = KeyApi.heartbeat(ksuApp.okhttpClient, stored.token, stored.machineId)
+                val response = KeyApi.heartbeat(ksuApp.okhttpClient, stored.token, stored.machineId, UserProfile.username(context))
                 TokenStore.save(context, response, stored.machineId)
                 state.value = KeyState.Active(response.type ?: stored.type, response.expireAt)
                 return
@@ -139,6 +139,13 @@ object KeyGuard {
                 Result.failure(e)
             }
         }
+    }
+
+    /** Saves the display name and syncs it to the server on the next heartbeat. */
+    fun setUsername(name: String) {
+        val context = appContext ?: return
+        UserProfile.setUsername(context, name)
+        refresh(force = true)
     }
 
     fun signOut() {
