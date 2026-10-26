@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.data.key
+﻿package me.weishu.kernelsu.data.key
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
@@ -119,14 +119,15 @@ object KeyGuard {
         }
     }
 
-    suspend fun activate(cardKey: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun activate(cardKey: String, username: String): Result<Unit> = withContext(Dispatchers.IO) {
         val context = appContext
             ?: return@withContext Result.failure(IllegalStateException("KeyGuard is not initialized"))
         mutex.withLock {
             try {
                 val machine = machineId(context)
-                val response = KeyApi.activate(ksuApp.okhttpClient, cardKey, machine)
+                val response = KeyApi.activate(ksuApp.okhttpClient, cardKey, machine, username.trim())
                 TokenStore.save(context, response, machine)
+                UserProfile.setUsername(context, username)
                 lastAttemptAt = System.currentTimeMillis()
                 state.value = KeyState.Active(response.type ?: "permanent", response.expireAt)
                 Result.success(Unit)

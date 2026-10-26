@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.ui.screen.home
+﻿package me.weishu.kernelsu.ui.screen.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -132,6 +132,7 @@ fun HomePagerMiuix(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        GreetingHeader(Modifier.fillMaxWidth())
                         if (state.checkUpdateEnabled) {
                             UpdateCard(state = state, actions = actions)
                         }

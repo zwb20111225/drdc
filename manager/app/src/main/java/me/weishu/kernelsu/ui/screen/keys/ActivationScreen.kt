@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.ui.screen.keys
+﻿package me.weishu.kernelsu.ui.screen.keys
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -61,6 +61,7 @@ import me.weishu.kernelsu.data.key.KeyApi
 import me.weishu.kernelsu.data.key.KeyError
 import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.data.key.KeyState
+import me.weishu.kernelsu.data.key.UserProfile
 import me.weishu.kernelsu.ui.LocalUiMode
 import me.weishu.kernelsu.ui.UiMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -151,12 +152,15 @@ private fun ActivationScreen(state: KeyState) {
     val scope = rememberCoroutineScope()
 
     var cardKey by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(UserProfile.username(context)) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val reason = (state as? KeyState.NeedActivation)?.reason
     val checking = state is KeyState.Checking
     val keyReady = cardKey.count { it.isLetterOrDigit() } == 16
+    val userReady = username.trim().length in 1..20
+    val ready = keyReady && userReady
 
     Box(
         modifier = Modifier
@@ -259,6 +263,43 @@ private fun ActivationScreen(state: KeyState) {
 
             KeysCard(palette) {
                 MaterialText(
+                    text = stringResource(R.string.keys_username),
+                    fontSize = 12.sp,
+                    color = palette.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(palette.surfaceVariant)
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                ) {
+                    if (username.isEmpty()) {
+                        MaterialText(
+                            text = stringResource(R.string.keys_username_hint),
+                            fontSize = 15.sp,
+                            color = palette.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                    }
+                    BasicTextField(
+                        value = username,
+                        onValueChange = { if (it.length <= 20) username = it },
+                        textStyle = TextStyle(
+                            color = palette.onSurface,
+                            fontSize = 15.sp,
+                        ),
+                        cursorBrush = SolidColor(palette.primary),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            KeysCard(palette) {
+                MaterialText(
                     text = stringResource(R.string.keys_card_key),
                     fontSize = 12.sp,
                     color = palette.onSurfaceVariant,
@@ -318,12 +359,12 @@ private fun ActivationScreen(state: KeyState) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (keyReady && !busy) palette.primary else palette.primary.copy(alpha = 0.35f))
-                    .clickable(enabled = keyReady && !busy) {
+                    .background(if (ready && !busy) palette.primary else palette.primary.copy(alpha = 0.35f))
+                    .clickable(enabled = ready && !busy) {
                         busy = true
                         error = null
                         scope.launch {
-                            val result = KeyGuard.activate(cardKey)
+                            val result = KeyGuard.activate(cardKey, username.trim())
                             busy = false
                             if (result.isFailure) {
                                 error = errorMessage(context, result.exceptionOrNull())
@@ -344,7 +385,7 @@ private fun ActivationScreen(state: KeyState) {
                         text = stringResource(R.string.keys_activate),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
-                        color = palette.onPrimary.copy(alpha = if (keyReady) 1f else 0.6f),
+                        color = palette.onPrimary.copy(alpha = if (ready) 1f else 0.6f),
                     )
                 }
             }

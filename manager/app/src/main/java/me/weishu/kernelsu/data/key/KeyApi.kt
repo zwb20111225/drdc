@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.data.key
+﻿package me.weishu.kernelsu.data.key
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,6 +22,7 @@ internal data class ActivateRequest(
     val card_key: String,
     val machine_id: String,
     val app_version: String,
+    val username: String,
     val nonce: String,
     val ts: Long,
     val sign: String,
@@ -69,6 +70,7 @@ object KeyApi {
         client: OkHttpClient,
         cardKey: String,
         machineId: String,
+        username: String,
     ): KeyResponse = withContext(Dispatchers.IO) {
         val ts = System.currentTimeMillis() / 1000
         val nonce = newNonce()
@@ -76,8 +78,11 @@ object KeyApi {
             card_key = cardKey,
             machine_id = machineId,
             app_version = appVersion,
+            username = username,
             nonce = nonce,
             ts = ts,
+            // The username is presentation data, not a security claim, so it stays
+            // outside the signature for compatibility with older clients.
             sign = hmacHex("$cardKey|$machineId|$appVersion|$nonce|$ts"),
         )
         post(client, "/api/v1/activate", json.encodeToString(payload))

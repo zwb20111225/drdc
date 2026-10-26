@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">主页</string>
     <string name="home_not_installed">未安装</string>
@@ -551,4 +551,11 @@
     <string name="home_hidden_selinux">SELinux 已隐藏</string>
     <string name="home_hidden_mount">挂载已隐藏</string>
     <string name="home_hidden_avc">AVC 已伪装</string>
+    <string name="keys_username">你的用户名</string>
+    <string name="keys_username_hint">例如：渡川</string>
+    <string name="home_greeting_subtitle">今天也要安全地使用 Root</string>
+    <string name="home_greeting_morning">早上好，%1$s</string>
+    <string name="home_greeting_afternoon">下午好，%1$s</string>
+    <string name="home_greeting_evening">晚上好，%1$s</string>
+    <string name="home_greeting_night">夜深了，%1$s</string>
 </resources>

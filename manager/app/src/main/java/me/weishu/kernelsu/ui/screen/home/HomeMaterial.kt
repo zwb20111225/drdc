@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.ui.screen.home
+﻿package me.weishu.kernelsu.ui.screen.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -105,6 +105,7 @@ fun HomePagerMaterial(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(13.dp)
         ) {
+            GreetingHeader()
             if (state.checkUpdateEnabled) {
                 UpdateCard(state = state, actions = actions)
             }
