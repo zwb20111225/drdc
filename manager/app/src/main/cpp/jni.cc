@@ -422,8 +422,8 @@ int fork_dont_care_and_exec_drdcd(const char *path, const char *pkg) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_me_weishu_kernelsu_magica_AppZygotePreload_forkDontCareAndExecKsud(JNIEnv *env, jclass clazz,
-                                                                        jstring drdcd_path, jstring pkg_name) {
+Java_com_drdc_winter_startup_Preload_forkDontCareAndExecKsud(JNIEnv *env, jclass clazz,
+                                                              jstring drdcd_path, jstring pkg_name) {
     auto path = env->GetStringUTFChars(drdcd_path, nullptr);
     auto pkg = env->GetStringUTFChars(pkg_name, nullptr);
     LOGD("executing magica %s (pkg %s)", path, pkg);

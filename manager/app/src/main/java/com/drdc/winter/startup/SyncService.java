@@ -1,4 +1,4 @@
-package me.weishu.kernelsu.magica;
+package com.drdc.winter.startup;
 
 import android.app.Service;
 import android.content.Intent;
@@ -7,7 +7,7 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 
-public class MagicaService extends Service {
+public class SyncService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

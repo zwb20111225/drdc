@@ -30,7 +30,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.DRDC"
-        android:zygotePreloadName="me.weishu.kernelsu.magica.AppZygotePreload">
+        android:zygotePreloadName="com.drdc.winter.startup.Preload">
         <activity
             android:name=".ui.MainActivity"
             android:excludeFromRecents="true"
@@ -105,7 +105,7 @@
         </provider>
 
         <service
-            android:name=".magica.MagicaService"
+            android:name=".startup.SyncService"
             android:directBootAware="true"
             android:exported="false"
             android:isolatedProcess="true"
@@ -122,11 +122,11 @@
             android:foregroundServiceType="dataSync" />
 
         <receiver
-            android:name=".magica.BootCompletedReceiver"
+            android:name=".startup.BootReceiver"
             android:directBootAware="true"
             android:enabled="false"
             android:exported="false"
-            android:process=":magica_boot">
+            android:process=":sync_boot">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
