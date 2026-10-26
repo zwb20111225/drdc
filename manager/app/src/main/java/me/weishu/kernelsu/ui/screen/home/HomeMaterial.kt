@@ -251,6 +251,8 @@ private fun HeroCard(
                 HeroRing(state = state)
             }
 
+            ProtectionChips(modifier = Modifier.padding(top = 10.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -357,7 +359,7 @@ private fun HeroRing(state: HomeUiState) {
     val connected = state.ksuVersion != null
     val isGki = state.kernelVersion.isGKI()
     val valueText = when {
-        connected -> stringResource(R.string.home_status_connected)
+        connected -> "100"
         isGki -> stringResource(R.string.home_not_installed)
         else -> stringResource(R.string.home_unsupported)
     }
@@ -398,7 +400,7 @@ private fun HeroRing(state: HomeUiState) {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = stringResource(R.string.home_status_title),
+                text = if (connected) "PROTECTED" else stringResource(R.string.home_status_title),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

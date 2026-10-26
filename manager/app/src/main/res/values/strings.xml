@@ -550,4 +550,12 @@
     <string name="root_key_copy">Copy</string>
     <string name="root_key_reset">Regenerate</string>
     <string name="root_key_close">Close</string>
+    <string name="settings_protection_center">Protection center</string>
+    <string name="settings_protection_summary">SELinux, mounts and AVC audit are hidden</string>
+    <string name="settings_avc_spoof">AVC log spoofing</string>
+    <string name="settings_avc_spoof_summary">Hide u:r:drdc:s0 from the audit buffer</string>
+    <string name="settings_feature_enabled">On</string>
+    <string name="home_hidden_selinux">SELinux hidden</string>
+    <string name="home_hidden_mount">Mounts hidden</string>
+    <string name="home_hidden_avc">AVC spoofed</string>
 </resources>

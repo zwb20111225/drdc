@@ -4,7 +4,6 @@ drdc-objs += feature/kernel_umount.o
 drdc-objs += feature/module_blacklist.o
 drdc-objs += feature/sulog.o
 drdc-objs += feature/sucompat.o
-drdc-objs += feature/root_key.o
 drdc-objs += feature/anti_lpe.o
 
 drdc-objs += hook/lsm_hook.o

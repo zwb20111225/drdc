@@ -157,25 +157,21 @@ void apply_drdc_rules()
     drdc_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
 
     /*
-     * AVC log spoofing: detectors scan logcat/dmesg audit records for denials whose
-     * tcontext is the root domain after probing /proc/<pid>/attr/current. Those probes
-     * are supposed to fail, so keep the EACCES but suppress the audit record. The
-     * emulated SELinux policy served by selinux_hide does not contain these rules.
+     * AVC log spoofing: hide every denial that mentions our root domain. Detectors
+     * probe /proc/<pid>/attr/current and then scan logcat/dmesg for a tcontext of
+     * u:r:drdc:s0; the "domain" attribute covers every SELinux domain, so the probe
+     * still gets EACCES but no audit record is written. selinux_hide serves the
+     * pre-modification policy to userspace, so these rules are invisible to it.
      */
-    {
-        static const char *const app_domains[] = {
-            "untrusted_app", "priv_app", "platform_app", "system_app", "app_zygote",
-        };
-        static const char *const file_perms[] = { "read", "open", "getattr" };
-        int i, j;
-
-        for (i = 0; i < 5; i++) {
-            for (j = 0; j < 3; j++)
-                drdc_dontaudit(db, app_domains[i], KERNEL_SU_DOMAIN, "file", file_perms[j]);
-            drdc_dontaudit(db, app_domains[i], KERNEL_SU_DOMAIN, "dir", "search");
-            drdc_dontaudit(db, app_domains[i], KERNEL_SU_DOMAIN, "process", "getattr");
-        }
-    }
+    drdc_dontaudit(db, "domain", KERNEL_SU_DOMAIN, "file", "read");
+    drdc_dontaudit(db, "domain", KERNEL_SU_DOMAIN, "file", "open");
+    drdc_dontaudit(db, "domain", KERNEL_SU_DOMAIN, "file", "getattr");
+    drdc_dontaudit(db, "domain", KERNEL_SU_DOMAIN, "dir", "search");
+    drdc_dontaudit(db, "domain", KERNEL_SU_DOMAIN, "process", "getattr");
+    drdc_dontaudit(db, "domain", KERNEL_SU_FILE, "file", "read");
+    drdc_dontaudit(db, "domain", KERNEL_SU_FILE, "file", "open");
+    drdc_dontaudit(db, "domain", KERNEL_SU_FILE, "file", "getattr");
+    drdc_dontaudit(db, "domain", KERNEL_SU_FILE, "dir", "search");
 
     rcu_assign_pointer(selinux_state.policy, pol);
     synchronize_rcu();

@@ -77,11 +77,7 @@ object Diagnostics {
         } else {
             ""
         }
-        val rootKey = if (rooted()) {
-            shell(true, "stat -c '%s bytes mode=%a' /data/adb/drdc/.root_key 2>/dev/null; echo \"auth=$(cat /sys/module/drdc/parameters/root_key_auth 2>/dev/null) only=$(cat /sys/module/drdc/parameters/root_key_only 2>/dev/null)\"", 5)
-        } else {
-            ""
-        }
+
         val featureCfg = if (rooted()) {
             shell(true, "ls -l /data/adb/drdc/.feature_config 2>/dev/null", 5)
         } else {
@@ -100,7 +96,6 @@ object Diagnostics {
             appendLine("allowlist: ${allowlist.ifBlank { "missing" }}")
             appendLine("modules  : ${modules.replace('\n', ' ').ifBlank { "none" }}")
             appendLine("drdcDir  : ${drdcDir.replace('\n', ' ').ifBlank { "missing" }}")
-            appendLine("rootKey  : ${rootKey.replace('\n', ' ').ifBlank { "missing" }}")
             appendLine("featureCfg: ${featureCfg.replace('\n', ' ').ifBlank { "missing" }}")
             appendLine("kernel   : version=${runCatching { Natives.version }.getOrDefault(0)} uapi=${runCatching { Natives.kernelUAPIVersion }.getOrDefault(-1)} managerUapi=${Natives.managerUAPIVersion}")
             appendLine("selinux  : hide=${runCatching { Natives.isSelinuxHideEnabled() }.getOrDefault(false)}")

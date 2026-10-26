@@ -91,7 +91,6 @@ data class SettingsScreenActions(
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
     val onSetAntiLpeEnabled: (Boolean) -> Unit,
-    val onOpenRootKey: () -> Unit,
     val onSetDisguisePasscode: (String) -> Unit,
     val onSetShowLauncherIcon: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,
