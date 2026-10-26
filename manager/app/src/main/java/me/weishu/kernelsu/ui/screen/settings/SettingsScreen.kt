@@ -4,9 +4,12 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,6 +21,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -108,13 +112,18 @@ private fun RootKeyDialog(onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     var key by remember { mutableStateOf<String?>(null) }
     var supported by remember { mutableStateOf(true) }
+    var keyOnlySupported by remember { mutableStateOf(false) }
+    var keyOnly by remember { mutableStateOf(false) }
+    var applying by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var working by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             supported = RootKey.isSupported()
+            keyOnlySupported = supported && RootKey.isKeyOnlySupported()
             key = if (supported) RootKey.ensure() else RootKey.read()
+            keyOnly = keyOnlySupported && RootKey.isKeyOnlyEnabled()
         }
         loading = false
     }
@@ -141,6 +150,35 @@ private fun RootKeyDialog(onDismiss: () -> Unit) {
                         }
                         Spacer(Modifier.height(12.dp))
                         Text(stringResource(R.string.root_key_usage, key!!))
+                        if (keyOnlySupported) {
+                            Spacer(Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.root_key_only_title))
+                                    Text(
+                                        text = stringResource(R.string.root_key_only_summary),
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                                Switch(
+                                    checked = keyOnly,
+                                    enabled = !applying,
+                                    onCheckedChange = { enable ->
+                                        scope.launch {
+                                            applying = true
+                                            val ok = withContext(Dispatchers.IO) {
+                                                RootKey.applyKeyOnly(enable)
+                                            }
+                                            if (ok) keyOnly = enable
+                                            applying = false
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }

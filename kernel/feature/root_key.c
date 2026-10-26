@@ -38,6 +38,46 @@ static bool drdc_root_key_auth = true;
 module_param_named(root_key_auth, drdc_root_key_auth, bool, 0644);
 MODULE_PARM_DESC(root_key_auth, "Allow root with the device root key (SKRoot-Lite style)");
 
+/*
+ * Key-only mode: once enabled, allowlisted apps also need the key. Only the
+ * manager (and uid 0) keep their normal root access, so a mistake here cannot
+ * lock the user out of the settings that turn it off.
+ */
+static bool drdc_root_key_only;
+module_param_named(root_key_only, drdc_root_key_only, bool, 0644);
+MODULE_PARM_DESC(root_key_only, "Require the root key even for allowlisted UIDs (SKRoot-Lite)");
+
+#define DRDC_ROOT_KEY_ONLY_FLAG "/data/adb/drdc/root_key_only"
+
+static bool drdc_file_exists(const char *path)
+{
+    struct file *fp;
+    const struct cred *old_cred;
+
+    old_cred = override_creds(drdc_cred);
+    fp = filp_open(path, O_RDONLY, 0);
+    revert_creds(old_cred);
+    if (IS_ERR(fp))
+        return false;
+    filp_close(fp, NULL);
+    return true;
+}
+
+void drdc_root_key_apply_boot_flag(void)
+{
+    bool only = drdc_file_exists(DRDC_ROOT_KEY_ONLY_FLAG);
+
+    if (only != drdc_root_key_only) {
+        drdc_root_key_only = only;
+        pr_info("root_key: key-only %s\n", only ? "enabled" : "disabled");
+    }
+}
+
+bool drdc_root_key_is_only(void)
+{
+    return drdc_root_key_only;
+}
+
 static int drdc_read_root_key(char *out, size_t size)
 {
     struct file *fp;

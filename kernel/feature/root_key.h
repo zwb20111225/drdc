@@ -13,4 +13,10 @@
  */
 bool drdc_su_key_allowed(const char __user *const __user *envp);
 
+/* Re-read the key-only flag file after /data is mounted. */
+void drdc_root_key_apply_boot_flag(void);
+
+/* True when allowlisted apps must present the key too (read from the hook). */
+bool drdc_root_key_is_only(void);
+
 #endif // __KSU_H_ROOT_KEY

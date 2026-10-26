@@ -18,6 +18,8 @@ object RootKey {
 
     private const val PATH = "/data/adb/drdc/.root_key"
     private const val PARAM = "/sys/module/drdc/parameters/root_key_auth"
+    private const val KEY_ONLY_PARAM = "/sys/module/drdc/parameters/root_key_only"
+    private const val KEY_ONLY_FLAG = "/data/adb/drdc/root_key_only"
     private const val ALPHABET =
         "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 
@@ -34,6 +36,30 @@ object RootKey {
 
     /** Creates a key on first use; keeps the existing one otherwise. */
     fun ensure(): String? = read() ?: reset()
+
+    /** True when the flashed kernel module supports key-only mode. */
+    fun isKeyOnlySupported(): Boolean = runCatching {
+        ShellUtils.fastCmd(getRootShell(), "test -e $KEY_ONLY_PARAM && echo ok").trim() == "ok"
+    }.getOrDefault(false)
+
+    /** Whether allowlisted apps must also present the key. */
+    fun isKeyOnlyEnabled(): Boolean = runCatching {
+        when (ShellUtils.fastCmd(getRootShell(), "cat $KEY_ONLY_PARAM 2>/dev/null").trim()) {
+            "Y", "1" -> true
+            else -> false
+        }
+    }.getOrDefault(false)
+
+    /** Applies key-only mode and makes it survive a reboot via the flag file. */
+    fun applyKeyOnly(enabled: Boolean): Boolean = runCatching {
+        val command = if (enabled) {
+            "mkdir -p /data/adb/drdc; touch $KEY_ONLY_FLAG; echo 1 > $KEY_ONLY_PARAM"
+        } else {
+            "mkdir -p /data/adb/drdc; rm -f $KEY_ONLY_FLAG; echo 0 > $KEY_ONLY_PARAM"
+        }
+        val value = ShellUtils.fastCmd(getRootShell(), "$command 2>/dev/null; cat $KEY_ONLY_PARAM 2>/dev/null").trim()
+        if (enabled) value == "Y" || value == "1" else value == "N" || value == "0"
+    }.getOrDefault(false)
 
     /** Replaces the key and returns the new one. */
     fun reset(): String? = runCatching {

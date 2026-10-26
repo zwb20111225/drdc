@@ -19,6 +19,7 @@
 #include "runtime/drdcd_boot.h"
 #include "feature/sulog.h"
 #include "feature/anti_lpe.h"
+#include "feature/root_key.h"
 #include "supercall/supercall.h"
 #include "drdc.h"
 #include "infra/file_wrapper.h"
@@ -166,6 +167,7 @@ int __init drdc_init(void)
 
         drdc_allowlist_init();
         drdc_load_allow_list();
+        drdc_root_key_apply_boot_flag();
 
         drdc_syscall_hook_manager_init();
         drdc_anti_lpe_init();

@@ -78,7 +78,7 @@ object Diagnostics {
             ""
         }
         val rootKey = if (rooted()) {
-            shell(true, "stat -c '%s bytes mode=%a' /data/adb/drdc/.root_key 2>/dev/null; cat /sys/module/drdc/parameters/root_key_auth 2>/dev/null", 5)
+            shell(true, "stat -c '%s bytes mode=%a' /data/adb/drdc/.root_key 2>/dev/null; echo \"auth=$(cat /sys/module/drdc/parameters/root_key_auth 2>/dev/null) only=$(cat /sys/module/drdc/parameters/root_key_only 2>/dev/null)\"", 5)
         } else {
             ""
         }

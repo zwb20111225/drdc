@@ -538,6 +538,8 @@
     <string name="root_key_need_kernel">当前内核还不支持 Root 密钥，刷入新版 LKM 后生效。</string>
     <string name="root_key_missing">还没有生成密钥。</string>
     <string name="root_key_usage">用法：把 DRDC_ROOT_KEY 设为上面的密钥，再执行 su。例如：DRDC_ROOT_KEY=%1$s su -c id</string>
+    <string name="root_key_only_title">所有应用都必须提供密钥</string>
+    <string name="root_key_only_summary">开启后，即使在授权列表里的应用也要带上密钥。管理器自身保留正常 root，方便随时关闭此开关。</string>
     <string name="root_key_copy">复制</string>
     <string name="root_key_reset">重新生成</string>
     <string name="root_key_close">关闭</string>

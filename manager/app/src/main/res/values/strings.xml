@@ -545,6 +545,8 @@
     <string name="root_key_need_kernel">The flashed kernel module does not support root keys yet. Flash the new LKM to enable this page.</string>
     <string name="root_key_missing">No key has been generated yet.</string>
     <string name="root_key_usage">Usage: set DRDC_ROOT_KEY to the key above, then run su. Example: DRDC_ROOT_KEY=%1$s su -c id</string>
+    <string name="root_key_only_title">Require the root key for everyone</string>
+    <string name="root_key_only_summary">Even allowlisted apps must pass the key. The manager keeps normal root access so this switch can always be turned off.</string>
     <string name="root_key_copy">Copy</string>
     <string name="root_key_reset">Regenerate</string>
     <string name="root_key_close">Close</string>
