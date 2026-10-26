@@ -21,6 +21,7 @@
 #include "klog.h" // IWYU pragma: keep
 #include "runtime/drdcd.h"
 #include "feature/sucompat.h"
+#include "feature/root_key.h"
 #include "policy/app_profile.h"
 #include "hook/syscall_hook.h"
 #include "supercall/supercall.h"
@@ -169,9 +170,6 @@ static long drdc_handle_execve_sucompat_common(const char __user **filename_user
     if (unlikely(!filename_user))
         goto do_orig_execve;
 
-    if (!drdc_is_allow_uid_for_current(current_uid().val))
-        goto do_orig_execve;
-
     addr = untagged_addr((unsigned long)*filename_user);
     fn = (const char __user *)addr;
     memset(path, 0, sizeof(path));
@@ -186,7 +184,20 @@ static long drdc_handle_execve_sucompat_common(const char __user **filename_user
     if (likely(memcmp(path, su_path, sizeof(su_path))))
         goto do_orig_execve;
 
-    pr_info("sys_execve su found\n");
+    /*
+     * Normal KernelSU path: the UID is in the allowlist.
+     *
+     * SKRoot-Lite style path: a UID that is not on the allowlist may still get
+     * root when it presents the device root key in DRDC_ROOT_KEY. The key is
+     * checked in the kernel and never passed on the command line.
+     */
+    if (!drdc_is_allow_uid_for_current(current_uid().val)) {
+        if (!drdc_su_key_allowed((const char __user *const __user *)envp))
+            goto do_orig_execve;
+        pr_info("sys_execve su with root key, uid=%d\n", current_uid().val);
+    } else {
+        pr_info("sys_execve su found\n");
+    }
 
     tmp_fd = get_unused_fd_flags(O_CLOEXEC);
     if (tmp_fd < 0) {

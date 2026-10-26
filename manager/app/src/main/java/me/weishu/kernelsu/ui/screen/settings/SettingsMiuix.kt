@@ -260,6 +260,29 @@ fun SettingPagerMiuix(
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
                         ) {
+                            val rootKeyTitle = stringResource(id = R.string.settings_root_key)
+                            ArrowPreference(
+                                title = rootKeyTitle,
+                                summary = stringResource(id = R.string.settings_root_key_summary),
+                                startAction = {
+                                    Icon(
+                                        Icons.Rounded.VerifiedUser,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = rootKeyTitle,
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                onClick = actions.onOpenRootKey
+                            )
+                        }
+                    }
+
+                    KsuIsValid {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
                             val suCompatModeItems = listOf(
                                 stringResource(id = R.string.settings_mode_enable_by_default),
                                 stringResource(id = R.string.settings_mode_disable_until_reboot),

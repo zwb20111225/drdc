@@ -219,6 +219,27 @@ fun SettingPagerMaterial(
                 )
             }
 
+            val rootKeyTitle = stringResource(id = R.string.settings_root_key)
+            KsuIsValid {
+                SegmentedColumn(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    content = listOf {
+                        SegmentedListItem(
+                            onClick = actions.onOpenRootKey,
+                            headlineContent = { Text(rootKeyTitle) },
+                            supportingContent = { Text(stringResource(id = R.string.settings_root_key_summary)) },
+                            leadingContent = { Icon(Icons.Filled.VerifiedUser, rootKeyTitle) },
+                            trailingContent = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    null
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+
             KsuIsValid {
                 val suCompatModeItems = listOf(
                     stringResource(id = R.string.settings_mode_enable_by_default),

@@ -1,4 +1,4 @@
-﻿package me.weishu.kernelsu
+package me.weishu.kernelsu
 
 import android.content.Context
 import android.os.Build
@@ -77,6 +77,11 @@ object Diagnostics {
         } else {
             ""
         }
+        val rootKey = if (rooted()) {
+            shell(true, "stat -c '%s bytes mode=%a' /data/adb/drdc/.root_key 2>/dev/null; cat /sys/module/drdc/parameters/root_key_auth 2>/dev/null", 5)
+        } else {
+            ""
+        }
         val trace = previousTrace.orEmpty()
         if (crash.isBlank() && tombstone.isBlank() && trace.isBlank()) return
 
@@ -90,6 +95,7 @@ object Diagnostics {
             appendLine("allowlist: ${allowlist.ifBlank { "missing" }}")
             appendLine("modules  : ${modules.replace('\n', ' ').ifBlank { "none" }}")
             appendLine("drdcDir  : ${drdcDir.replace('\n', ' ').ifBlank { "missing" }}")
+            appendLine("rootKey  : ${rootKey.replace('\n', ' ').ifBlank { "missing" }}")
             appendLine("manager  : ${runCatching { Natives.isManager }.getOrDefault(false)} / lateLoad=${runCatching { Natives.isLateLoadMode }.getOrDefault(false)}")
             appendLine("rootShell: ${runCatching { me.weishu.kernelsu.ui.util.rootAvailable() }.getOrDefault(false)}")
             appendLine("antiLpe  : ${runCatching { java.io.File("/sys/module/drdc/parameters/anti_lpe").readText().trim() }.getOrNull() ?: "?"}")
