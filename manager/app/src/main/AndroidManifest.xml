@@ -105,7 +105,7 @@
         </provider>
 
         <service
-            android:name=".startup.SyncService"
+            android:name="com.drdc.winter.startup.SyncService"
             android:directBootAware="true"
             android:exported="false"
             android:isolatedProcess="true"
@@ -122,7 +122,7 @@
             android:foregroundServiceType="dataSync" />
 
         <receiver
-            android:name=".startup.BootReceiver"
+            android:name="com.drdc.winter.startup.BootReceiver"
             android:directBootAware="true"
             android:enabled="false"
             android:exported="false"
