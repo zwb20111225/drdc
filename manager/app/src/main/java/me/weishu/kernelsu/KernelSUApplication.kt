@@ -9,10 +9,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import com.topjohnwu.superuser.ShellUtils
 import me.weishu.kernelsu.data.GrantBackup
 import me.weishu.kernelsu.data.BootRepair
 import me.weishu.kernelsu.data.key.KeyGuard
 import me.weishu.kernelsu.ui.util.AntiLpe
+import me.weishu.kernelsu.ui.util.getRootShell
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import okhttp3.Cache
@@ -101,6 +103,20 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
         // Recover modules that were stuck in modules_update / never got their .remove
         // marker processed because post-fs-data did not run at boot.
         Thread({ runCatching { BootRepair.maybeRun() } }, "drdc-boot-repair").apply { isDaemon = true }.start()
+
+        // SKRoot-Lite is gone: remove any key file and turn the old kernel parameter off
+        // so a previously issued key cannot keep granting root while the new LKM is pending.
+        Thread({
+            runCatching {
+                if (Natives.isManager) {
+                    ShellUtils.fastCmd(
+                        getRootShell(),
+                        "rm -f /data/adb/drdc/.root_key; " +
+                            "echo 0 > /sys/module/drdc/parameters/root_key_auth 2>/dev/null"
+                    )
+                }
+            }
+        }, "drdc-skr-disable").apply { isDaemon = true }.start()
 
         // Apply the saved PI-futex filter preference to the running kernel.
         Thread({
