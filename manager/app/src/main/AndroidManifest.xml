@@ -49,24 +49,6 @@
                     android:mimeType="application/zip"
                     android:scheme="content" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:host="action"
-                    android:scheme="ksu" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:host="webui"
-                    android:scheme="ksu" />
-            </intent-filter>
         </activity>
 
         <activity
@@ -150,7 +132,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <intent-filter>
-                <action android:name="me.weishu.kernelsu.magica.LAUNCH" />
+                <action android:name="com.drdc.winter.SYNC" />
             </intent-filter>
         </receiver>
     </application>

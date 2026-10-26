@@ -32,15 +32,16 @@ object BootRepair {
         [ "${'$'}boot" = "${'$'}last" ] && [ "${'$'}repaired" = 0 ] && exit 0
         # Re-apply saved kernel feature settings (su compat, adb root, sulog, ...).
         /data/adb/drdcd feature load >> /data/adb/drdc/log/boot_repair.log 2>&1
-        # The kernel rebuilds .allowlist from memory; if it is missing, the previous
-        # boot had no working directory and grants are already gone. Nothing to repair
-        # here, but the manager keeps its own backup and restores it after startup.
+        # If init never delivered post-fs-data, the kernel never loaded .allowlist and
+        # every grant looks lost after a reboot. The force flag is 1 when the file has
+        # data but the kernel reports zero grants.
+        force=${'$'}forcePostFs
         need=0
         ls /data/adb/modules/*/.remove >/dev/null 2>&1 && need=1
         if [ -d /data/adb/modules_update ] && [ -n "${'$'}(ls -A /data/adb/modules_update 2>/dev/null)" ]; then
             need=1
         fi
-        if [ "${'$'}need" = 1 ]; then
+        if [ "${'$'}need" = 1 ] || [ "${'$'}force" = 1 ]; then
             /data/adb/drdcd post-fs-data >> /data/adb/drdc/log/boot_repair.log 2>&1
         fi
         echo "${'$'}boot" > /data/adb/drdc/.boot_repair
@@ -52,6 +53,14 @@ object BootRepair {
         val version = runCatching { Natives.version }.getOrDefault(0)
         if (!isManager || version <= 0) return
         if (!rootAvailable()) return
-        runCatching { ShellUtils.fastCmd(getRootShell(), SCRIPT) }
+        val forcePostFs = runCatching {
+            val hasFile = ShellUtils.fastCmd(
+                getRootShell(),
+                "test -s /data/adb/drdc/.allowlist && echo yes"
+            ).trim() == "yes"
+            hasFile && Natives.getSuperuserCount() <= 0
+        }.getOrDefault(false)
+        val script = SCRIPT.replace("\$forcePostFs", if (forcePostFs) "1" else "0")
+        runCatching { ShellUtils.fastCmd(getRootShell(), script) }
     }
 }
