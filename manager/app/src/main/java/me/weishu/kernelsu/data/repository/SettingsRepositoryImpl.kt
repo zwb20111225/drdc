@@ -36,7 +36,20 @@ class SettingsRepositoryImpl : SettingsRepository {
     }
 
     private val prefs by lazy {
-        ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+        ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE).also { prefs ->
+            // One-time Aurora preset for devices upgrading from the old look. Users can
+            // still change every value from Settings afterwards.
+            if (!prefs.getBoolean("aurora_ui", false)) {
+                prefs.edit {
+                    putBoolean("enable_blur", true)
+                    putBoolean("enable_floating_bottom_bar", true)
+                    putBoolean("enable_floating_bottom_bar_blur", true)
+                    putString("color_style", PaletteStyle.Expressive.name)
+                    putInt("key_color", 0xFF6EE7F2.toInt())
+                    putBoolean("aurora_ui", true)
+                }
+            }
+        }
     }
 
     override var uiMode: String
