@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.rounded.Rule
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Calculate
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.DeveloperMode
@@ -206,32 +207,17 @@ fun SettingPagerMiuix(
                             },
                             value = passcode,
                             onValueChange = { input ->
-                                val sanitized = input
-                                    .filter { it.isDigit() }
-                                    .take(DisguiseConfig.MAX_PASSCODE_LENGTH)
+                                val sanitized = DisguiseConfig.sanitize(input)
                                 passcode = sanitized
                                 if (DisguiseConfig.isValidPasscode(sanitized)) {
                                     actions.onSetDisguisePasscode(sanitized)
                                 }
                             },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                             isError = !passcodeValid,
                             textHint = DisguiseConfig.DEFAULT_PASSCODE,
                         )
-                        SwitchPreference(
-                            title = stringResource(id = R.string.settings_disguise_show_icon),
-                            summary = stringResource(id = R.string.settings_disguise_show_icon_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Rounded.Visibility,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_disguise_show_icon),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            checked = uiState.showLauncherIcon,
-                            onCheckedChange = actions.onSetShowLauncherIcon
-                        )
+
                     }
 
                     KsuIsValid {

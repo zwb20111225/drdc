@@ -25,7 +25,10 @@ val managerVersionName = rootProject.extra["managerVersionName"] as String
 val isPrBuild = project.findProperty("IS_PR_BUILD")?.toString()?.toBoolean() ?: false
 val defaultManagerPackageName = if (isPrBuild) "com.drdc.winter.pr" else "com.drdc.winter"
 val defaultManagerName = if (isPrBuild) "冬日渡川 PR" else "冬日渡川"
-val managerPackageName = project.findProperty("KSU_PACKAGE_NAME")?.toString() ?: defaultManagerPackageName
+val managerPackageName = project.findProperty("KSU_PACKAGE_NAME")?.toString()
+    ?: project.findProperty("drdcPackageName")?.toString()
+    ?: System.getenv("DRDC_PACKAGE_NAME")
+    ?: defaultManagerPackageName
 val managerName = project.findProperty("KSU_NAME")?.toString() ?: defaultManagerName
 
 apksign {
@@ -158,7 +161,7 @@ android {
             ?: "https://899788drdc.xyz"
         val keyAppSecret = (findProperty("drdcKeyAppSecret") as String?)
             ?: System.getenv("DRDC_KEY_APP_SECRET")
-            ?: "442defef50ae50b9fbc040befcdabee26fd40984742783fb"
+            ?: "REPLACE_WITH_DRDC_APP_SECRET"
         buildConfigField("String", "KEY_SERVER_URL", "\"$keyServerUrl\"")
         buildConfigField("String", "KEY_APP_SECRET", "\"$keyAppSecret\"")
 

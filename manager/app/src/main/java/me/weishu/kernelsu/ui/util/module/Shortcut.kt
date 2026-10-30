@@ -112,17 +112,13 @@ object Shortcut {
             .setIcon(finalIcon)
             .build()
 
-        // Dynamic shortcuts surface in the launcher's long-press menu. While the real launcher
-        // entry is hidden they would reveal the manager behind the calculator, so skip them.
-        if (SettingsRepositoryImpl().showLauncherIcon) {
-            try {
-                Log.d(TAG, "$logPrefix: pushDynamicShortcut() called for moduleId=$moduleId")
-                ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
-            } catch (t: Throwable) {
-                Log.w(TAG, "$logPrefix: pushDynamicShortcut() threw exception for moduleId=$moduleId: ${t.message}", t)
-            }
-        } else {
-            Log.d(TAG, "$logPrefix: launcher icon hidden, dynamic shortcut skipped for moduleId=$moduleId")
+        // Dynamic shortcuts surface in the launcher's long-press menu; they are the normal
+        // way into a module's WebUI.
+        try {
+            Log.d(TAG, "$logPrefix: pushDynamicShortcut() called for moduleId=$moduleId")
+            ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+        } catch (t: Throwable) {
+            Log.w(TAG, "$logPrefix: pushDynamicShortcut() threw exception for moduleId=$moduleId: ${t.message}", t)
         }
 
         if (hasPinned) {

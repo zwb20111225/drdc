@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">主页</string>
     <string name="home_not_installed">未安装</string>
@@ -510,11 +510,9 @@
     <string name="keys_error_generic">激活失败：%1$s</string>
     <string name="calculator_label">计算器</string>
     <string name="calculator_error">错误</string>
-    <string name="settings_disguise_passcode">解锁口令</string>
-    <string name="settings_disguise_passcode_summary">在计算器输入口令后按 = 进入冬日渡川。</string>
-    <string name="settings_disguise_passcode_invalid">请输入 4-12 位数字，且不能以 0 开头。</string>
-    <string name="settings_disguise_show_icon">显示桌面图标</string>
-    <string name="settings_disguise_show_icon_summary">在桌面同时显示冬日渡川入口。</string>
+    <string name="settings_disguise_passcode">解锁码（计算器）</string>
+    <string name="settings_disguise_passcode_summary">在系统计算器里输入这段解锁码再按 =，内核侧识别到就打开管理器。</string>
+    <string name="settings_disguise_passcode_invalid">使用 4 到 8 位，只能是数字和 + - * / . ，且不能以 0 开头。</string>
     <string name="install_root_manager_conflict">检测到已安装 KernelSU/Magisk，它已经改过引导镜像。请先在它的管理器里卸载（会恢复原厂镜像），重启后再刷 DRDC，否则会叠加冲突。</string>
 <string name="files_open">打开</string>
     <string name="files_execute">执行</string>
@@ -560,4 +558,8 @@
     <string name="home_greeting_afternoon">下午好，%1$s</string>
     <string name="home_greeting_evening">晚上好，%1$s</string>
     <string name="home_greeting_night">夜深了，%1$s</string>
+    <string name="entry_channel_name">管理器入口</string>
+    <string name="entry_channel_description">管理器需要手动点一下才能打开时使用。</string>
+    <string name="entry_notification_title">管理器已就绪</string>
+    <string name="entry_notification_text">点击打开管理器。</string>
 </resources>

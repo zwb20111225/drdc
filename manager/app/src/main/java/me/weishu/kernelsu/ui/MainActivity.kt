@@ -79,7 +79,6 @@ import me.weishu.kernelsu.ui.screen.about.AboutScreen
 import me.weishu.kernelsu.ui.screen.appprofile.AppProfileScreen
 import me.weishu.kernelsu.ui.screen.colorpalette.ColorPaletteScreen
 import me.weishu.kernelsu.ui.screen.executemoduleaction.ExecuteModuleActionScreen
-import me.weishu.kernelsu.ui.screen.files.FilesPager
 import me.weishu.kernelsu.ui.screen.flash.FlashScreen
 import me.weishu.kernelsu.ui.screen.home.HomePager
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
@@ -94,7 +93,6 @@ import me.weishu.kernelsu.ui.screen.sulog.SulogScreen
 import me.weishu.kernelsu.ui.screen.superuser.SuperUserPager
 import me.weishu.kernelsu.ui.screen.template.AppProfileTemplateScreen
 import me.weishu.kernelsu.ui.screen.templateeditor.TemplateEditorScreen
-import me.weishu.kernelsu.ui.screen.terminal.TerminalPager
 import me.weishu.kernelsu.ui.theme.DRDCTheme
 import me.weishu.kernelsu.ui.theme.LocalColorMode
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
@@ -359,7 +357,10 @@ fun MainScreen(
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
     val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
     val useNavigationRail = useNavigationRail(enableFloatingBottomBar)
-    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { MainPagerConfig.PAGE_COUNT })
+    val pagerState = rememberPagerState(
+        initialPage = MainPagerConfig.coercePage(initialPage),
+        pageCount = { MainPagerConfig.PAGE_COUNT },
+    )
     val mainPagerState = rememberMainPagerState(
         pagerState = pagerState,
         animatePageChanges = !useNavigationRail,
@@ -478,8 +479,6 @@ fun MainScreen(
                             )
                         }
 
-                        MainPagerConfig.PAGE_FILES -> if (contentReady || isCurrentPage) FilesPager(bottomInnerPadding, isCurrentPage)
-                        MainPagerConfig.PAGE_TERMINAL -> if (contentReady || isCurrentPage) TerminalPager(bottomInnerPadding, isCurrentPage)
                         MainPagerConfig.PAGE_KEYS -> if (contentReady || isCurrentPage) KeysPager(bottomInnerPadding, isCurrentPage)
                         MainPagerConfig.PAGE_SETTINGS -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
                     }

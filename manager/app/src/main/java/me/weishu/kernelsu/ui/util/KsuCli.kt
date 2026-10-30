@@ -650,16 +650,22 @@ fun rootAvailable(): Boolean {
 }
 
 suspend fun getCurrentKmi(): String = withContext(Dispatchers.IO) {
-    val shell = getRootShell()
-    val cmd = "boot-info current-kmi"
-    ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd")
+    val fromDaemon = runCatching {
+        val shell = getRootShell()
+        val cmd = "boot-info current-kmi"
+        ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd").trim()
+    }.getOrDefault("")
+    fromDaemon.ifBlank { KmiCatalog.currentFromSystem() }
 }
 
 suspend fun getSupportedKmis(): List<String> = withContext(Dispatchers.IO) {
-    val shell = getRootShell()
-    val cmd = "boot-info supported-kmis"
-    val out = shell.newJob().add("${getKsuDaemonPath()} $cmd").to(ArrayList(), null).exec().out
-    out.filter { it.isNotBlank() }.map { it.trim() }
+    val out = runCatching {
+        val shell = getRootShell()
+        val cmd = "boot-info supported-kmis"
+        shell.newJob().add("${getKsuDaemonPath()} $cmd").to(ArrayList(), null).exec().out
+    }.getOrDefault(emptyList())
+    val fromDaemon = out.filter { it.isNotBlank() }.map { it.trim() }
+    fromDaemon.ifEmpty { KmiCatalog.supported }
 }
 
 suspend fun isAbDevice(): Boolean = withContext(Dispatchers.IO) {

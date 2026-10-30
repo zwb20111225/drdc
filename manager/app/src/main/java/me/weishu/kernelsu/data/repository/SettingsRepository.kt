@@ -34,11 +34,8 @@ interface SettingsRepository {
     /** Kernel-side PI-futex filter for CVE-2026-43499 (GhostLock). */
     var antiLpeEnabled: Boolean
 
-    /** Unlock code typed in the disguised calculator to open the manager. */
+    /** Unlock code the root side watches for in the system calculator. */
     var disguisePasscode: String
-
-    /** Whether the real launcher entry (`WinterAlias`) is visible. */
-    var showLauncherIcon: Boolean
     val intentToken: String
 
     suspend fun getSuCompatStatus(): String

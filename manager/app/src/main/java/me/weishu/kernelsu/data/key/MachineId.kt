@@ -8,11 +8,18 @@ import java.security.MessageDigest
 import java.util.Locale
 
 /**
- * Machine fingerprint per SPEC §5.1: android_id + board serial + kernel build fingerprint +
- * CPU serial, hashed with SHA-256 and truncated to 16 hex chars. No privacy-sensitive fields
- * (IMEI, phone number, location) are collected.
+ * Machine fingerprint: android_id + hardware board identity + SoC/CPU serial,
+ * hashed with SHA-256 and truncated to 16 hex chars.
+ *
+ * Deliberately excludes Build.FINGERPRINT, Build.BOOTLOADER and the kernel
+ * os.version: those change after an OTA and would otherwise make the same
+ * phone look like a new device. A reinstall signed with a different key can
+ * still change ANDROID_ID; the server handles that with a one-time rebind.
+ * No privacy-sensitive fields (IMEI, phone number, location) are collected.
  */
 object MachineId {
+
+    private const val SCHEMA = "drdc-mid-v2"
 
     fun compute(context: Context): String {
         val androidId = runCatching {
@@ -28,19 +35,13 @@ object MachineId {
             Build.MODEL,
         ).joinToString("|")
 
-        val kernel = listOf(
-            System.getProperty("os.version").orEmpty(),
-            Build.FINGERPRINT,
-            Build.BOOTLOADER,
-        ).joinToString("|")
-
         val cpu = listOf(
             readCpuSerial(),
             Build.SOC_MODEL,
             Build.SOC_MANUFACTURER,
         ).joinToString("|")
 
-        val raw = listOf(androidId, board, kernel, cpu).joinToString("::")
+        val raw = listOf(SCHEMA, androidId, board, cpu).joinToString("::")
         return sha256Hex(raw).take(16)
     }
 

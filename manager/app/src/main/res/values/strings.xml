@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">Home</string>
     <string name="home_not_installed">Not installed</string>
@@ -517,11 +517,9 @@
     <string name="keys_error_generic">Activation failed: %1$s</string>
     <string name="calculator_label">Calculator</string>
     <string name="calculator_error">Error</string>
-    <string name="settings_disguise_passcode">Unlock code</string>
-    <string name="settings_disguise_passcode_summary">Type it in the calculator and press = to open the manager.</string>
-    <string name="settings_disguise_passcode_invalid">Use 4 to 12 digits, not starting with 0.</string>
-    <string name="settings_disguise_show_icon">Show launcher icon</string>
-    <string name="settings_disguise_show_icon_summary">Show the real manager entry next to the calculator.</string>
+    <string name="settings_disguise_passcode">Unlock code (calculator)</string>
+    <string name="settings_disguise_passcode_summary">Type this code in the system calculator, then press =. The kernel side spots it and opens the manager.</string>
+    <string name="settings_disguise_passcode_invalid">Use 4 to 8 characters: digits and + - * / . only, not starting with 0.</string>
     <string name="install_root_manager_conflict">KernelSU/Magisk is installed and has already patched this boot image. Uninstall it first (it restores the stock boot image), reboot, then flash DRDC.</string>
 <string name="files_open">Open</string>
     <string name="files_execute">Execute</string>
@@ -567,4 +565,8 @@
     <string name="home_greeting_afternoon">Good afternoon, %1$s</string>
     <string name="home_greeting_evening">Good evening, %1$s</string>
     <string name="home_greeting_night">Still up, %1$s?</string>
+    <string name="entry_channel_name">Manager entry</string>
+    <string name="entry_channel_description">Used when the manager needs a tap to open itself.</string>
+    <string name="entry_notification_title">Manager ready to open</string>
+    <string name="entry_notification_text">Tap to open the manager.</string>
 </resources>

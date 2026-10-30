@@ -18,6 +18,20 @@
 
     <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
 
+    <queries>
+        <package android:name="com.topjohnwu.magisk" />
+        <!--
+          Android 11+ requires package visibility: without an explicit <intent> the
+          PackageManager returns only our own package for the launcher query, which is
+          why the WebUI host picker showed an empty list. This grants visibility of
+          launcher apps only; QUERY_ALL_PACKAGES is deliberately not used.
+        -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".KernelSUApplication"
         android:allowBackup="true"
@@ -35,6 +49,8 @@
             android:name=".ui.MainActivity"
             android:excludeFromRecents="true"
             android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
             android:launchMode="singleTask"
             android:taskAffinity="${applicationId}.manager"
             android:theme="@style/Theme.DRDC.Starting"
@@ -51,34 +67,18 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.calculator.CalculatorActivity"
-            android:exported="false"
-            android:icon="@mipmap/ic_calculator"
-            android:label="@string/calculator_label"
-            android:theme="@style/Theme.DRDC" />
-
-        <!-- The calculator is the only launcher entry by default; the real one is hidden. -->
-        <activity-alias
-            android:name="me.weishu.kernelsu.ui.CalculatorAlias"
-            android:enabled="true"
-            android:exported="true"
-            android:icon="@mipmap/ic_calculator"
-            android:label="@string/calculator_label"
-            android:targetActivity="me.weishu.kernelsu.ui.calculator.CalculatorActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
+        <!--
+          Real manager icon. Toggled at runtime by SettingsRepositoryImpl.applyLauncherIconState
+          through setComponentEnabledSetting(WINTER_ALIAS), so the component name here must stay
+          in sync with DisguiseConfig.WINTER_ALIAS.
+        -->
         <activity-alias
             android:name="me.weishu.kernelsu.ui.WinterAlias"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
-            android:targetActivity="me.weishu.kernelsu.ui.MainActivity">
+            android:targetActivity=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

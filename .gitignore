@@ -9,3 +9,7 @@ __pycache__
 /dist
 /repack-config.json
 /userspace/drdcd/.lkm_image_bootstrap.o
+/manager/build
+/manager/app/build
+/manager/.gradle
+/manager/local.properties

@@ -41,8 +41,6 @@ fun BottomBarMaterial(navigationBadge: NavigationBadgeState) {
 
     val items = listOf(
         Triple(R.string.tab_ice, Icons.Filled.AcUnit, Icons.Outlined.AcUnit),
-        Triple(R.string.tab_files, Icons.Filled.Folder, Icons.Outlined.Folder),
-        Triple(R.string.tab_terminal, Icons.Filled.Terminal, Icons.Outlined.Terminal),
         Triple(R.string.tab_keys, Icons.Filled.Key, Icons.Outlined.Key),
         Triple(R.string.settings, Icons.Filled.Settings, Icons.Outlined.Settings)
     )

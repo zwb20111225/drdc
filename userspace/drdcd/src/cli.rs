@@ -39,6 +39,22 @@ enum Commands {
     #[command(hide = true)]
     Sulogd,
 
+    /// Watch the stock calculator for the unlock code. Not for user.
+    #[command(hide = true)]
+    CalcWatch {
+        /// Print raw touch coordinates instead of matching, for keypad calibration
+        #[arg(long)]
+        calibrate: bool,
+    },
+
+    /// Serve the local root console on 127.0.0.1. Not for user.
+    #[command(hide = true)]
+    Webui {
+        /// Port to listen on
+        #[arg(long, default_value_t = crate::webui::DEFAULT_PORT)]
+        port: u16,
+    },
+
     /// Trigger `boot-complete` event
     BootCompleted,
 
@@ -689,6 +705,8 @@ pub fn run() -> Result<()> {
             Ok(())
         }
         Commands::Sulogd => sulog::run_sulogd(),
+        Commands::CalcWatch { calibrate } => crate::calcwatch::run(calibrate),
+        Commands::Webui { port } => crate::webui::run(port),
         Commands::Profile { command } => match command {
             Profile::GetSepolicy { package } => crate::profile::get_sepolicy(package),
             Profile::SetSepolicy { package, policy } => {

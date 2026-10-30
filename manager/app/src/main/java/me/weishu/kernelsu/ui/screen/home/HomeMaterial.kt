@@ -1,4 +1,4 @@
-﻿package me.weishu.kernelsu.ui.screen.home
+package me.weishu.kernelsu.ui.screen.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Terminal
@@ -243,16 +244,35 @@ private fun HeroCard(
                 }
             }
 
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 14.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(top = 18.dp, bottom = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                HeroRing(state = state)
+                Text(
+                    text = if (connected) "已安装" else "未安装",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (connected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "内核 " + state.systemInfo.kernelVersion.substringBefore("-") +
+                        if (isGki) " · GKI" else "",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (!connected) {
+                    Text(
+                        text = "点击这里安装内核模块",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    )
+                }
             }
 
-            ProtectionChips(modifier = Modifier.padding(top = 10.dp))
+            ProtectionChips(kernelReady = connected, modifier = Modifier.padding(top = 10.dp))
 
             Row(
                 modifier = Modifier
@@ -488,22 +508,6 @@ private fun HomeTiles(actions: HomeActions) {
                 title = stringResource(R.string.superuser),
                 summary = stringResource(R.string.home_tile_superuser_desc),
                 onClick = actions.onOpenSuperUser,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-            HomeTile(
-                icon = Icons.Rounded.Terminal,
-                title = stringResource(R.string.tab_terminal),
-                summary = stringResource(R.string.home_tile_terminal_desc),
-                onClick = actions.onOpenTerminal,
-                modifier = Modifier.weight(1f),
-            )
-            HomeTile(
-                icon = Icons.Rounded.Folder,
-                title = stringResource(R.string.tab_files),
-                summary = stringResource(R.string.home_tile_files_desc),
-                onClick = actions.onOpenFiles,
                 modifier = Modifier.weight(1f),
             )
         }

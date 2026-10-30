@@ -31,13 +31,20 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * Three live stealth indicators shown under the home hero ring. Uses explicit colors so
  * the same composable works in both Material and Miuix themes.
+ *
+ * When the kernel driver is not installed, Natives calls can return stale/default true
+ * values.  Gate every indicator on [kernelReady] so a non-rooted install shows
+ * "not installed" instead of claiming SELinux/mounts/AVC are already hidden.
  */
 @Composable
-fun ProtectionChips(modifier: Modifier = Modifier) {
-    val selinux = remember { runCatching { Natives.isSelinuxHideEnabled() }.getOrDefault(false) }
-    val mount = remember {
-        runCatching { Natives.isKernelUmountEnabled() && Natives.isDefaultUmountModules() }
-            .getOrDefault(false)
+fun ProtectionChips(kernelReady: Boolean, modifier: Modifier = Modifier) {
+    val selinux = remember(kernelReady) {
+        kernelReady && runCatching { Natives.isSelinuxHideEnabled() }.getOrDefault(false)
+    }
+    val mount = remember(kernelReady) {
+        kernelReady && runCatching {
+            Natives.isKernelUmountEnabled() && Natives.isDefaultUmountModules()
+        }.getOrDefault(false)
     }
     val material = LocalUiMode.current == UiMode.Material
     val scheme = MiuixTheme.colorScheme
@@ -45,6 +52,11 @@ fun ProtectionChips(modifier: Modifier = Modifier) {
     val onContent = if (material) MaterialTheme.colorScheme.onPrimaryContainer else scheme.onPrimaryContainer
     val offContainer = if (material) MaterialTheme.colorScheme.errorContainer else scheme.errorContainer
     val offContent = if (material) MaterialTheme.colorScheme.onErrorContainer else scheme.onErrorContainer
+    val unavailableContainer =
+        if (material) MaterialTheme.colorScheme.surfaceContainerHigh else scheme.surfaceContainerHigh
+    val unavailableContent =
+        if (material) MaterialTheme.colorScheme.onSurfaceVariant else scheme.onSurfaceVariantSummary
+    val unavailableText = stringResource(R.string.home_not_installed)
 
     Row(
         modifier = modifier,
@@ -52,24 +64,33 @@ fun ProtectionChips(modifier: Modifier = Modifier) {
     ) {
         ProtectionChip(
             icon = Icons.Rounded.Security,
-            text = stringResource(R.string.home_hidden_selinux),
+            text = if (kernelReady) stringResource(R.string.home_hidden_selinux) else unavailableText,
             enabled = selinux,
+            available = kernelReady,
             container = if (selinux) onContainer else offContainer,
             content = if (selinux) onContent else offContent,
+            unavailableContainer = unavailableContainer,
+            unavailableContent = unavailableContent,
         )
         ProtectionChip(
             icon = Icons.Rounded.Layers,
-            text = stringResource(R.string.home_hidden_mount),
+            text = if (kernelReady) stringResource(R.string.home_hidden_mount) else unavailableText,
             enabled = mount,
+            available = kernelReady,
             container = if (mount) onContainer else offContainer,
             content = if (mount) onContent else offContent,
+            unavailableContainer = unavailableContainer,
+            unavailableContent = unavailableContent,
         )
         ProtectionChip(
             icon = Icons.Rounded.VisibilityOff,
-            text = stringResource(R.string.home_hidden_avc),
-            enabled = true,
+            text = if (kernelReady) stringResource(R.string.home_hidden_avc) else unavailableText,
+            enabled = kernelReady,
+            available = kernelReady,
             container = onContainer,
             content = onContent,
+            unavailableContainer = unavailableContainer,
+            unavailableContent = unavailableContent,
         )
     }
 }
@@ -79,12 +100,17 @@ private fun ProtectionChip(
     icon: ImageVector,
     text: String,
     enabled: Boolean,
+    available: Boolean,
     container: Color,
     content: Color,
+    unavailableContainer: Color,
+    unavailableContent: Color,
 ) {
+    val bg = if (available) container else unavailableContainer
+    val fg = if (available) content else unavailableContent
     Row(
         modifier = Modifier
-            .background(container.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
+            .background(bg.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
             .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -92,17 +118,17 @@ private fun ProtectionChip(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = content,
+            tint = fg,
             modifier = Modifier.size(13.dp),
         )
         Text(
             text = text,
-            color = content,
+            color = fg,
             fontSize = 10.5.sp,
             maxLines = 1,
         )
-        if (!enabled) {
-            Text(text = "!", color = content, fontSize = 10.5.sp)
+        if (available && !enabled) {
+            Text(text = "!", color = fg, fontSize = 10.5.sp)
         }
     }
 }

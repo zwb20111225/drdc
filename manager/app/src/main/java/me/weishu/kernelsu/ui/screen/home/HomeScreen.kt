@@ -81,8 +81,6 @@ fun HomePager(
         },
         onOpenModule = { navigator.push(Route.Module) },
         onOpenSuperUser = { navigator.push(Route.SuperUser) },
-        onOpenTerminal = { onSwitchPage(MainPagerConfig.PAGE_TERMINAL) },
-        onOpenFiles = { onSwitchPage(MainPagerConfig.PAGE_FILES) },
     )
 
     when (LocalUiMode.current) {

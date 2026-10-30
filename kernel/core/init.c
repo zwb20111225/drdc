@@ -19,6 +19,7 @@
 #include "runtime/drdcd_boot.h"
 #include "feature/sulog.h"
 #include "feature/anti_lpe.h"
+#include "feature/drdcd_watchdog.h"
 #include "supercall/supercall.h"
 #include "drdc.h"
 #include "infra/file_wrapper.h"
@@ -194,6 +195,8 @@ int __init drdc_init(void)
 
         drdc_drdcd_init();
 
+        drdc_watchdog_init();
+
         drdc_preinit_init();
 
         drdc_file_wrapper_init();
@@ -216,6 +219,7 @@ void __exit drdc_exit(void)
     drdc_supercalls_exit();
 
     if (!drdc_late_loaded) {
+        drdc_watchdog_exit();
         drdc_drdcd_exit();
         drdc_preinit_exit();
     }

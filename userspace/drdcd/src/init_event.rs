@@ -172,6 +172,43 @@ pub fn on_services() {
 
     info!("on_services triggered!");
     run_stage("service", ScriptWait::NoWait);
+    spawn_local_console();
+    spawn_calcwatch();
+}
+
+/// Forks a detached child of this same binary. Used for the long-lived helpers so a crash
+/// in one of them cannot take the init event down with it.
+fn spawn_child(label: &str, args: &[&str]) {
+    let Ok(exe) = std::env::current_exe() else {
+        warn!("cannot resolve drdcd path, {label} not started");
+        return;
+    };
+    match std::process::Command::new(exe)
+        .args(args)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    {
+        Ok(child) => info!("{label} started, pid {}", child.id()),
+        Err(e) => error!("failed to start {label}: {e}"),
+    }
+}
+
+/// The loopback console lives in drdcd, not in the APK, so it keeps working after the
+/// manager is uninstalled — root is carried by the boot image and drdc.ko.
+fn spawn_local_console() {
+    spawn_child("webui", &["webui"]);
+}
+
+/// Starts the calculator watcher once the keypad has been calibrated. Without
+/// /data/adb/drdc/calc_keys there is nothing to match against, so it stays off.
+fn spawn_calcwatch() {
+    const KEYS: &str = "/data/adb/drdc/calc_keys";
+    if !Path::new(KEYS).exists() {
+        return;
+    }
+    spawn_child("calcwatch", &["calc-watch"]);
 }
 
 pub fn on_boot_completed() {

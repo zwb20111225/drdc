@@ -58,7 +58,6 @@ class SettingsViewModel(
                 autoJailbreak = repo.autoJailbreak,
                 useSoftReboot = repo.useSoftReboot,
                 disguisePasscode = repo.disguisePasscode,
-                showLauncherIcon = repo.showLauncherIcon,
                 antiLpeEnabled = repo.antiLpeEnabled,
                 isLkmMode = repo.isLkmMode(),
                 isLateLoadMode = Natives.isLateLoadMode,
@@ -128,7 +127,6 @@ class SettingsViewModel(
             val autoJailbreak = repo.autoJailbreak
             val useSoftReboot = repo.useSoftReboot
             val disguisePasscode = repo.disguisePasscode
-            val showLauncherIcon = repo.showLauncherIcon
             val isLateLoadMode = Natives.isLateLoadMode
             val antiLpeSupported = withContext(Dispatchers.IO) { AntiLpe.isSupported() }
             val antiLpeKernel = if (antiLpeSupported) {
@@ -181,7 +179,6 @@ class SettingsViewModel(
                     autoJailbreak = autoJailbreak,
                     useSoftReboot = useSoftReboot,
                     disguisePasscode = disguisePasscode,
-                    showLauncherIcon = showLauncherIcon,
                     isLateLoadMode = isLateLoadMode,
                     antiLpeEnabled = antiLpeEnabled,
                     antiLpeSupported = antiLpeSupported,
@@ -395,17 +392,10 @@ class SettingsViewModel(
     }
 
     fun setDisguisePasscode(passcode: String) {
-        val sanitized = passcode
-            .filter { it.isDigit() }
-            .take(DisguiseConfig.MAX_PASSCODE_LENGTH)
+        val sanitized = DisguiseConfig.sanitize(passcode)
         if (!DisguiseConfig.isValidPasscode(sanitized)) return
         repo.disguisePasscode = sanitized
         _uiState.update { it.copy(disguisePasscode = sanitized) }
-    }
-
-    fun setShowLauncherIcon(enabled: Boolean) {
-        repo.showLauncherIcon = enabled
-        _uiState.update { it.copy(showLauncherIcon = enabled) }
     }
 
     fun setAntiLpeEnabled(enabled: Boolean) {

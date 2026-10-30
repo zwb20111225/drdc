@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.Rule
 import androidx.compose.material.icons.filled.Adb
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DeveloperMode
@@ -187,15 +188,6 @@ fun SettingPagerMaterial(
                             trailingContent = { Text(uiState.disguisePasscode) },
                         )
                     },
-                    {
-                        SegmentedSwitchItem(
-                            icon = Icons.Filled.Visibility,
-                            title = stringResource(id = R.string.settings_disguise_show_icon),
-                            summary = stringResource(id = R.string.settings_disguise_show_icon_summary),
-                            checked = uiState.showLauncherIcon,
-                            onCheckedChange = actions.onSetShowLauncherIcon,
-                        )
-                    }
                 )
             )
 
@@ -478,9 +470,7 @@ private fun DisguisePasscodeDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { input ->
-                    value = input
-                        .filter { it.isDigit() }
-                        .take(DisguiseConfig.MAX_PASSCODE_LENGTH)
+                    value = DisguiseConfig.sanitize(input)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -494,7 +484,7 @@ private fun DisguisePasscodeDialog(
                         }
                     )
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             )
         },
         confirmButton = {

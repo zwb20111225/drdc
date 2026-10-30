@@ -138,8 +138,6 @@ enum class BottomBarDestination(
     val icon: ImageVector,
 ) {
     Ice(R.string.tab_ice, Icons.Rounded.AcUnit),
-    Files(R.string.tab_files, Icons.Rounded.Folder),
-    Terminal(R.string.tab_terminal, Icons.Rounded.Terminal),
     Keys(R.string.tab_keys, Icons.Rounded.Key),
     Setting(R.string.settings, Icons.Rounded.Settings)
 }

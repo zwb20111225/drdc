@@ -67,8 +67,8 @@ class KernelSUApplication : Application(), ViewModelStoreOwner {
             setEnableOnBackInvokedCallback(applicationInfo, enable)
         }
 
-        // Keep the hidden real launcher entry in sync with the persisted setting.
-        SettingsRepositoryImpl().syncLauncherIconState()
+        // The launcher entry is a plain activity-alias that is always enabled; there is no
+        // icon toggle any more, so nothing has to be re-applied at startup.
 
         // The superuser list is loaded when its page opens; preloading it here meant hundreds
         // of JNI profile lookups during startup, which is both slow and risky on kernels that

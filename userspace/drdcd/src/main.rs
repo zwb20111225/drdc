@@ -15,6 +15,8 @@ mod apk_sign;
 mod assets;
 mod boot_patch;
 #[cfg(target_os = "android")]
+mod calcwatch;
+#[cfg(target_os = "android")]
 mod cli;
 #[cfg(not(target_os = "android"))]
 mod cli_non_android;
@@ -62,6 +64,8 @@ mod sulog;
 mod unload;
 #[cfg(target_os = "android")]
 mod utils;
+#[cfg(target_os = "android")]
+mod webui;
 
 #[cfg(target_os = "android")]
 #[allow(nonstandard_style, unused, unsafe_op_in_unsafe_fn)]

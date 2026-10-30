@@ -69,8 +69,7 @@ data class SettingsUiState(
     val antiLpeSupported: Boolean = false,
 
     // Disguise
-    val disguisePasscode: String = DisguiseConfig.DEFAULT_PASSCODE,
-    val showLauncherIcon: Boolean = false
+    val disguisePasscode: String = DisguiseConfig.DEFAULT_PASSCODE
 )
 
 @Immutable
@@ -92,6 +91,5 @@ data class SettingsScreenActions(
     val onSetUseSoftReboot: (Boolean) -> Unit,
     val onSetAntiLpeEnabled: (Boolean) -> Unit,
     val onSetDisguisePasscode: (String) -> Unit,
-    val onSetShowLauncherIcon: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,
 )

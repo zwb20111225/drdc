@@ -37,16 +37,16 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     private val prefs by lazy {
         ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE).also { prefs ->
-            // One-time Aurora preset for devices upgrading from the old look. Users can
-            // still change every value from Settings afterwards.
-            if (!prefs.getBoolean("aurora_ui", false)) {
+            // One-time migration to the clean Material 3 look. The old Aurora preset
+            // enabled blur + a floating bar and forced the Miuix theme; the product now
+            // uses the simpler Material layout by default.
+            if (!prefs.getBoolean("clean_ui_v3", false)) {
                 prefs.edit {
-                    putBoolean("enable_blur", true)
-                    putBoolean("enable_floating_bottom_bar", true)
-                    putBoolean("enable_floating_bottom_bar_blur", true)
-                    putString("color_style", PaletteStyle.Expressive.name)
-                    putInt("key_color", 0xFF6EE7F2.toInt())
-                    putBoolean("aurora_ui", true)
+                    putString("ui_mode", UiMode.Material.value)
+                    putBoolean("enable_blur", false)
+                    putBoolean("enable_floating_bottom_bar", false)
+                    putBoolean("enable_floating_bottom_bar_blur", false)
+                    putBoolean("clean_ui_v3", true)
                 }
             }
         }
@@ -192,49 +192,6 @@ class SettingsRepositoryImpl : SettingsRepository {
             ?.takeIf { DisguiseConfig.isValidPasscode(it) }
             ?: DisguiseConfig.DEFAULT_PASSCODE
         set(value) = prefs.edit { putString(DisguiseConfig.KEY_DISGUISE_PASSCODE, value) }
-
-    override var showLauncherIcon: Boolean
-        get() = prefs.getBoolean(DisguiseConfig.KEY_SHOW_LAUNCHER_ICON, false)
-        set(value) {
-            prefs.edit { putBoolean(DisguiseConfig.KEY_SHOW_LAUNCHER_ICON, value) }
-            applyLauncherIconState(value)
-        }
-
-    /** Re-applies the persisted alias state; called when the application starts. */
-    fun syncLauncherIconState() = applyLauncherIconState(showLauncherIcon)
-
-    private fun applyLauncherIconState(enabled: Boolean) {
-        runCatching {
-            val component = ComponentName(ksuApp, DisguiseConfig.WINTER_ALIAS)
-            val desired = if (enabled) {
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            } else {
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            }
-            if (ksuApp.packageManager.getComponentEnabledSetting(component) != desired) {
-                ksuApp.packageManager.setComponentEnabledSetting(
-                    component,
-                    desired,
-                    PackageManager.DONT_KILL_APP
-                )
-            }
-        }.onFailure {
-            Log.e("Settings", "failed to change Winter alias state to $enabled", it)
-        }
-
-        if (!enabled) {
-            // Dynamic shortcuts show up in the launcher's long-press menu; clear them so the
-            // calculator icon cannot be used to discover the manager. Pinned shortcuts are
-            // explicit user actions and are intentionally kept.
-            runCatching {
-                if (ShortcutManagerCompat.getDynamicShortcuts(ksuApp).isNotEmpty()) {
-                    ShortcutManagerCompat.removeAllDynamicShortcuts(ksuApp)
-                }
-            }.onFailure {
-                Log.e("Settings", "failed to clear dynamic shortcuts", it)
-            }
-        }
-    }
 
     override val intentToken: String
         get() {

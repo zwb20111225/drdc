@@ -5,6 +5,7 @@ drdc-objs += feature/module_blacklist.o
 drdc-objs += feature/sulog.o
 drdc-objs += feature/sucompat.o
 drdc-objs += feature/anti_lpe.o
+drdc-objs += feature/drdcd_watchdog.o
 
 drdc-objs += hook/lsm_hook.o
 drdc-objs += hook/setuid_hook.o

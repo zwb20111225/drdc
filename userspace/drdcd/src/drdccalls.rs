@@ -289,6 +289,24 @@ pub fn set_feature(feature_id: u32, value: u64) -> Result<()> {
     Ok(())
 }
 
+/// Grant or revoke root for a uid by writing its app profile.
+///
+/// `allow_su = true` with the default root profile is what the manager writes when the user
+/// taps "allow"; `allow_su = false` keeps the entry but denies it, which is the revoke path.
+/// The allowlist itself stays kernel-owned — this only edits the per-uid policy.
+pub fn set_allow_su(uid: i32, allow: bool) -> Result<()> {
+    let mut profile: drdc_uapi::app_profile = unsafe { std::mem::zeroed() };
+    profile.version = drdc_uapi::KSU_APP_PROFILE_VER;
+    profile.curr_uid = uid;
+    profile.allow_su = allow;
+    // The union is initialised through its root-profile arm; `use_default` makes the kernel
+    // fall back to its own default root profile instead of the zeroed fields.
+    profile.__bindgen_anon_1.rp_config.use_default = true;
+    let mut cmd = drdc_uapi::drdc_set_app_profile_cmd { profile };
+    drdcctl(drdc_uapi::KSU_IOCTL_SET_APP_PROFILE, &raw mut cmd)?;
+    Ok(())
+}
+
 pub fn get_wrapped_fd(fd: RawFd) -> Result<RawFd> {
     let mut cmd = drdc_uapi::drdc_get_wrapper_fd_cmd {
         fd: fd as u32,

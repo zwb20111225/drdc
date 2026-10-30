@@ -1,4 +1,4 @@
-﻿package me.weishu.kernelsu.ui.screen.home
+package me.weishu.kernelsu.ui.screen.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Terminal
@@ -291,7 +292,7 @@ private fun HeroCard(
                 HeroRing(state = state)
             }
 
-            ProtectionChips(modifier = Modifier.padding(top = 10.dp))
+            ProtectionChips(kernelReady = connected, modifier = Modifier.padding(top = 10.dp))
 
             Row(
                 modifier = Modifier
@@ -520,22 +521,6 @@ private fun HomeTiles(actions: HomeActions) {
                 title = stringResource(R.string.superuser),
                 summary = stringResource(R.string.home_tile_superuser_desc),
                 onClick = actions.onOpenSuperUser,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-            HomeTile(
-                icon = Icons.Rounded.Terminal,
-                title = stringResource(R.string.tab_terminal),
-                summary = stringResource(R.string.home_tile_terminal_desc),
-                onClick = actions.onOpenTerminal,
-                modifier = Modifier.weight(1f),
-            )
-            HomeTile(
-                icon = Icons.Rounded.Folder,
-                title = stringResource(R.string.tab_files),
-                summary = stringResource(R.string.home_tile_files_desc),
-                onClick = actions.onOpenFiles,
                 modifier = Modifier.weight(1f),
             )
         }
