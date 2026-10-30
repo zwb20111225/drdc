@@ -99,7 +99,11 @@ fn handle(mut stream: TcpStream) -> Result<()> {
             "application/json; charset=utf-8",
             start_calibration(),
         ),
-        (_, "/api/calibrate") => ("200 OK", "application/json; charset=utf-8", calibration_json()),
+        (_, "/api/calibrate") => (
+            "200 OK",
+            "application/json; charset=utf-8",
+            calibration_json(),
+        ),
         (_, "/" | "/index.html") => ("200 OK", "text/html; charset=utf-8", index_html()),
         (_, "/api/status") => ("200 OK", "application/json; charset=utf-8", status_json()),
         (_, "/api/modules") => ("200 OK", "application/json; charset=utf-8", modules_json()),
@@ -210,9 +214,7 @@ fn grant_action(rest: &str) -> String {
         _ => return err_json("unknown action"),
     };
     match crate::drdccalls::set_allow_su(uid, allow) {
-        Ok(()) => format!(
-            "{{\"ok\":true,\"uid\":{uid},\"allowed\":{allow}}}"
-        ),
+        Ok(()) => format!("{{\"ok\":true,\"uid\":{uid},\"allowed\":{allow}}}"),
         Err(e) => {
             log::warn!("webui: set_allow_su({uid}, {allow}) failed: {e:#}");
             err_json(&format!("{e:#}"))
