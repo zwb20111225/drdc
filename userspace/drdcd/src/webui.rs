@@ -222,34 +222,44 @@ fn grant_action(rest: &str) -> String {
     }
 }
 
+/// Runs `f` with the calibration state locked. Taking the lock through a helper keeps the
+/// guard out of match scrutinees, which clippy flags as an early-dropped temporary.
+fn with_calibration<R>(f: impl FnOnce(&mut Calibration) -> R) -> R {
+    let mut guard = calibration()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    f(&mut guard)
+}
+
 fn calibration_json() -> String {
-    let state = match calibration().lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => poisoned.into_inner(),
-    };
+    let (active, expected, collected, message) = with_calibration(|state| {
+        (
+            state.active,
+            state.expected,
+            state.collected,
+            state.message.clone(),
+        )
+    });
     format!(
-        "{{\"active\":{},\"expected\":{},\"collected\":{},\"order\":\"{}\",\"message\":\"{}\"}}",
-        state.active,
-        state.expected,
-        state.collected,
+        "{{\"active\":{active},\"expected\":{expected},\"collected\":{collected},\"order\":\"{}\",\"message\":\"{}\"}}",
         json_escape(CALIB_ORDER),
-        json_escape(&state.message)
+        json_escape(&message)
     )
 }
 
 fn start_calibration() -> String {
-    {
-        let mut state = match calibration().lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+    let already_running = with_calibration(|state| {
         if state.active {
-            return "{\"ok\":false,\"error\":\"already_running\"}".to_string();
+            return true;
         }
         state.active = true;
         state.expected = CALIB_ORDER.chars().count();
         state.collected = 0;
         state.message = String::new();
+        false
+    });
+    if already_running {
+        return "{\"ok\":false,\"error\":\"already_running\"}".to_string();
     }
 
     thread::spawn(|| {
@@ -262,36 +272,32 @@ fn start_calibration() -> String {
             match rx.recv_timeout(Duration::from_millis(400)) {
                 Ok(point) => {
                     points.push(point);
-                    let mut state = match calibration().lock() {
-                        Ok(guard) => guard,
-                        Err(poisoned) => poisoned.into_inner(),
-                    };
-                    state.collected = points.len();
+                    let count = points.len();
+                    with_calibration(|state| state.collected = count);
                 }
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
                 Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
             }
         }
 
-        let mut state = match calibration().lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        state.active = false;
-
-        if points.len() < order.len() {
-            state.message = format!("只收到 {} 个点，超时未完成", points.len());
-            return;
-        }
-
         let mut out = String::new();
         for (ch, (x, y)) in order.iter().zip(points.iter()) {
             out.push_str(&format!("{ch} {x} {y}\n"));
         }
-        match write_keys(&out) {
-            Ok(()) => state.message = format!("已写入 {KEYS_FILE}，共 {} 个键", order.len()),
-            Err(e) => state.message = format!("写入失败：{e}"),
-        }
+        let complete = points.len() == order.len();
+        let written = if complete { write_keys(&out) } else { Ok(()) };
+
+        with_calibration(|state| {
+            state.active = false;
+            state.message = if !complete {
+                format!("只收到 {} 个点，超时未完成", points.len())
+            } else {
+                match written {
+                    Ok(()) => format!("已写入 {KEYS_FILE}，共 {} 个键", order.len()),
+                    Err(e) => format!("写入失败：{e}"),
+                }
+            };
+        });
     });
 
     "{\"ok\":true}".to_string()
