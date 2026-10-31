@@ -188,7 +188,7 @@ static ssize_t drdc_wrapper_sendpage(struct file *fp, struct page *pg, int arg1,
 #endif
 
 static unsigned long drdc_wrapper_get_unmapped_area(struct file *fp, unsigned long arg1, unsigned long arg2,
-                                                   unsigned long arg3, unsigned long arg4)
+                                                    unsigned long arg3, unsigned long arg4)
 {
     struct drdc_file_wrapper *data = fp->private_data;
     struct file *orig = data->orig;
@@ -211,7 +211,7 @@ static int drdc_wrapper_flock(struct file *fp, int arg1, struct file_lock *fl)
 }
 
 static ssize_t drdc_wrapper_splice_write(struct pipe_inode_info *pii, struct file *fp, loff_t *off, size_t sz,
-                                        unsigned int arg1)
+                                         unsigned int arg1)
 {
     struct drdc_file_wrapper *data = fp->private_data;
     struct file *orig = data->orig;
@@ -222,7 +222,7 @@ static ssize_t drdc_wrapper_splice_write(struct pipe_inode_info *pii, struct fil
 }
 
 static ssize_t drdc_wrapper_splice_read(struct file *fp, loff_t *off, struct pipe_inode_info *pii, size_t sz,
-                                       unsigned int arg1)
+                                        unsigned int arg1)
 {
     struct drdc_file_wrapper *data = fp->private_data;
     struct file *orig = data->orig;
@@ -296,7 +296,7 @@ static void drdc_wrapper_show_fdinfo(struct seq_file *m, struct file *f)
 
 // https://cs.android.com/android/kernel/superproject/+/common-android-mainline:common/fs/read_write.c;l=1593-1606;drc=398da7defe218d3e51b0f3bdff75147e28125b60
 static ssize_t drdc_wrapper_copy_file_range(struct file *file_in, loff_t pos_in, struct file *file_out, loff_t pos_out,
-                                           size_t len, unsigned int flags)
+                                            size_t len, unsigned int flags)
 {
     struct drdc_file_wrapper *data = file_out->private_data;
     struct file *orig = data->orig;
@@ -309,7 +309,7 @@ static ssize_t drdc_wrapper_copy_file_range(struct file *file_in, loff_t pos_in,
 // REMAP_FILE_DEDUP: use file_out
 // https://cs.android.com/android/kernel/superproject/+/common-android-mainline:common/fs/remap_range.c;l=483-484;drc=398da7defe218d3e51b0f3bdff75147e28125b60
 static loff_t drdc_wrapper_remap_file_range(struct file *file_in, loff_t pos_in, struct file *file_out, loff_t pos_out,
-                                           loff_t len, unsigned int remap_flags)
+                                            loff_t len, unsigned int remap_flags)
 {
     if (remap_flags & REMAP_FILE_DEDUP) {
         struct drdc_file_wrapper *data = file_out->private_data;
@@ -422,7 +422,7 @@ static void drdc_wrapper_d_release(struct dentry *dentry)
 }
 
 static const struct dentry_operations drdc_file_wrapper_d_ops = { .d_dname = drdc_wrapper_d_dname,
-                                                                 .d_release = drdc_wrapper_d_release };
+                                                                  .d_release = drdc_wrapper_d_release };
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
 #define drdc_anon_inode_create_getfile_compat anon_inode_create_getfile
@@ -458,7 +458,7 @@ static struct inode *drdc_anon_inode_make_secure_inode(const char *name, const s
 }
 
 static struct file *drdc_anon_inode_create_getfile_compat(const char *name, const struct file_operations *fops,
-                                                         void *priv, int flags, const struct inode *context_inode)
+                                                          void *priv, int flags, const struct inode *context_inode)
 {
     struct inode *inode;
     struct file *file;
@@ -522,7 +522,7 @@ int drdc_install_file_wrapper(int fd)
     */
     old_cred = override_creds(drdc_cred);
     wrapper_file = drdc_anon_inode_create_getfile_compat("[drdc_fdwrapper]", &file_wrapper_data->ops, file_wrapper_data,
-                                                        orig_file->f_flags, NULL);
+                                                         orig_file->f_flags, NULL);
     revert_creds(old_cred);
     if (IS_ERR(wrapper_file)) {
         pr_err("drdc_fdwrapper: getfile failed: %ld\n", PTR_ERR(wrapper_file));

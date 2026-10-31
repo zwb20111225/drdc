@@ -118,9 +118,7 @@ static long drdc_sys_futex_hook(const struct pt_regs *regs)
         if (uid >= 10000 && !is_uid_manager(uid) && strcmp(current->comm, "drdcd") != 0) {
             unsigned int op = (unsigned int)PT_REGS_PARM2(regs);
             if (drdc_is_pi_futex_op(op)) {
-                pr_info_ratelimited(
-                    "anti_lpe: blocked futex op=0x%x uid=%d comm=%s\n",
-                    op, uid, current->comm);
+                pr_info_ratelimited("anti_lpe: blocked futex op=0x%x uid=%d comm=%s\n", op, uid, current->comm);
                 return -ENOSYS;
             }
         }

@@ -157,7 +157,8 @@ out_release_env_p:
     return ret;
 }
 
-static long do_drdc_adb_root_handle_execve(const char __user *filename_user, struct pt_regs *regs, unsigned long *envp_p)
+static long do_drdc_adb_root_handle_execve(const char __user *filename_user, struct pt_regs *regs,
+                                           unsigned long *envp_p)
 {
     if (likely(is_exec_adbd(filename_user) != 1)) {
         return 0;
@@ -181,7 +182,7 @@ long drdc_adb_root_handle_execve(struct pt_regs *regs)
 {
     if (static_branch_unlikely(&drdc_adb_root)) {
         return do_drdc_adb_root_handle_execve((const char __user *)PT_REGS_SYSCALL_PARM1(regs), regs,
-                                             (unsigned long *)&PT_REGS_PARM3(regs));
+                                              (unsigned long *)&PT_REGS_PARM3(regs));
     }
     return 0;
 }
@@ -190,7 +191,7 @@ long drdc_adb_root_handle_execveat(struct pt_regs *regs)
 {
     if (static_branch_unlikely(&drdc_adb_root)) {
         return do_drdc_adb_root_handle_execve((const char __user *)PT_REGS_PARM2(regs), regs,
-                                             (unsigned long *)&PT_REGS_SYSCALL_PARM4(regs));
+                                              (unsigned long *)&PT_REGS_SYSCALL_PARM4(regs));
     }
     return 0;
 }

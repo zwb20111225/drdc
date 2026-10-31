@@ -30,7 +30,7 @@ bool drdc_dontauditxperm(struct policydb *db, const char *src, const char *tgt, 
 
 // Type rules
 bool drdc_type_transition(struct policydb *db, const char *src, const char *tgt, const char *cls, const char *def,
-                         const char *obj);
+                          const char *obj);
 bool drdc_type_change(struct policydb *db, const char *src, const char *tgt, const char *cls, const char *def);
 bool drdc_type_member(struct policydb *db, const char *src, const char *tgt, const char *cls, const char *def);
 

@@ -336,7 +336,7 @@ void __exit drdc_syscall_hook_exit(void)
     int ret;
     if (x64_sys_call_patch_addr) {
         ret = drdc_patch_text((void *)x64_sys_call_patch_addr, x64_sys_call_patch_orig_insn,
-                             sizeof(x64_sys_call_patch_orig_insn), KSU_PATCH_TEXT_FLUSH_ICACHE);
+                              sizeof(x64_sys_call_patch_orig_insn), KSU_PATCH_TEXT_FLUSH_ICACHE);
         if (ret) {
             pr_err("restore x64_sys_call err: %d\n", ret);
         }
@@ -344,8 +344,8 @@ void __exit drdc_syscall_hook_exit(void)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
     if (do_syscall_64_patch_addr) {
-        ret = drdc_patch_text((void *)do_syscall_64_patch_addr, do_syscall_64_orig_insn, sizeof(do_syscall_64_orig_insn),
-                             KSU_PATCH_TEXT_FLUSH_ICACHE);
+        ret = drdc_patch_text((void *)do_syscall_64_patch_addr, do_syscall_64_orig_insn,
+                              sizeof(do_syscall_64_orig_insn), KSU_PATCH_TEXT_FLUSH_ICACHE);
         if (ret) {
             pr_err("restore x64_sys_call err: %d\n", ret);
         }

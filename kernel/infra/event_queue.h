@@ -51,7 +51,7 @@ void drdc_event_queue_init(struct drdc_event_queue *queue, __u32 max_queued, __u
 void drdc_event_queue_destroy(struct drdc_event_queue *queue);
 
 int drdc_event_queue_push(struct drdc_event_queue *queue, __u16 type, __u16 flags, const void *payload, __u32 len,
-                         gfp_t gfp);
+                          gfp_t gfp);
 void drdc_event_queue_drop(struct drdc_event_queue *queue);
 
 ssize_t drdc_event_queue_read(struct drdc_event_queue *queue, char __user *buf, size_t count, int file_flags);

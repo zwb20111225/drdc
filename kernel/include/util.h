@@ -33,14 +33,14 @@ static_assert(1 == 0, "Unsupported architecture!");
 #define __ksyscall(name, a, b, c, d, e, f)                                                                             \
     ({                                                                                                                 \
         extern long KSU_SYS_PREFIX(name)(const struct pt_regs *);                                                      \
-        struct pt_regs __drdc_regs = { 0 };                                                                             \
-        PT_REGS_SYSCALL_PARM1(&__drdc_regs) = (unsigned long)(a);                                                       \
-        PT_REGS_PARM2(&__drdc_regs) = (unsigned long)(b);                                                               \
-        PT_REGS_PARM3(&__drdc_regs) = (unsigned long)(c);                                                               \
-        PT_REGS_SYSCALL_PARM4(&__drdc_regs) = (unsigned long)(d);                                                       \
-        PT_REGS_PARM5(&__drdc_regs) = (unsigned long)(e);                                                               \
-        PT_REGS_PARM6(&__drdc_regs) = (unsigned long)(f);                                                               \
-        (long)KSU_SYS_PREFIX(name)(&__drdc_regs);                                                                       \
+        struct pt_regs __drdc_regs = { 0 };                                                                            \
+        PT_REGS_SYSCALL_PARM1(&__drdc_regs) = (unsigned long)(a);                                                      \
+        PT_REGS_PARM2(&__drdc_regs) = (unsigned long)(b);                                                              \
+        PT_REGS_PARM3(&__drdc_regs) = (unsigned long)(c);                                                              \
+        PT_REGS_SYSCALL_PARM4(&__drdc_regs) = (unsigned long)(d);                                                      \
+        PT_REGS_PARM5(&__drdc_regs) = (unsigned long)(e);                                                              \
+        PT_REGS_PARM6(&__drdc_regs) = (unsigned long)(f);                                                              \
+        (long)KSU_SYS_PREFIX(name)(&__drdc_regs);                                                                      \
     })
 
 // https://elixir.bootlin.com/musl/v1.2.6/source/src/internal/syscall.h#L45

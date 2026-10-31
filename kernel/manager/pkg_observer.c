@@ -55,7 +55,7 @@ static void drdc_defer_track_throne(void)
 }
 
 static int drdc_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct inode *inode, struct inode *dir,
-                                  const struct qstr *file_name, u32 cookie)
+                                   const struct qstr *file_name, u32 cookie)
 {
     if (!file_name)
         return 0;

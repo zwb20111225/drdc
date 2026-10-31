@@ -90,7 +90,7 @@ fail:
 // https://cs.android.com/android/_/android/kernel/common/+/6d9f07d8f1ffc310a6877153fe882f35ae380799
 // So we need to grep kernel source code to detect which one to use.
 #if KSU_NEW_DCACHE_FLUSH
-#define drdc_flush_dcache(start, sz)                                                                                    \
+#define drdc_flush_dcache(start, sz)                                                                                   \
     ({                                                                                                                 \
         unsigned long __start = (start);                                                                               \
         unsigned long __end = __start + (sz);                                                                          \

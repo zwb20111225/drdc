@@ -30,7 +30,7 @@ static inline bool drdc_riscv_jal_target(u32 insn, unsigned long pc, unsigned lo
 }
 
 static inline bool drdc_riscv_auipc_call_target(u32 upper, u32 next, unsigned int next_len, unsigned long pc,
-                                               unsigned long *target)
+                                                unsigned long *target)
 {
     unsigned int reg = (upper >> 7) & 0x1f;
     s32 lower;

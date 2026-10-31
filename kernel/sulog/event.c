@@ -196,7 +196,7 @@ static __u32 drdc_sulog_flatten_argv(const char __user *const __user *argv_user,
 }
 
 static struct drdc_sulog_pending_event *drdc_sulog_capture(__u16 event_type, const char __user *filename_user,
-                                                         const char __user *const __user *argv_user, gfp_t gfp)
+                                                           const char __user *const __user *argv_user, gfp_t gfp)
 {
     struct drdc_sulog_pending_event *pending = NULL;
     struct drdc_sulog_event *event;
@@ -255,7 +255,7 @@ out_drop:
 }
 
 static struct drdc_sulog_pending_event *drdc_sulog_capture_grant_root(const struct drdc_sulog_identity *identity,
-                                                                    gfp_t gfp)
+                                                                      gfp_t gfp)
 {
     struct drdc_sulog_pending_event *pending;
     struct drdc_sulog_event *event;
@@ -289,13 +289,13 @@ static void drdc_sulog_free_pending(struct drdc_sulog_pending_event *pending)
 }
 
 struct drdc_sulog_pending_event *drdc_sulog_capture_root_execve(const char __user *filename_user,
-                                                              const char __user *const __user *argv_user, gfp_t gfp)
+                                                                const char __user *const __user *argv_user, gfp_t gfp)
 {
     return drdc_sulog_capture(KSU_SULOG_EVENT_ROOT_EXECVE, filename_user, argv_user, gfp);
 }
 
 struct drdc_sulog_pending_event *drdc_sulog_capture_sucompat(const char __user *filename_user,
-                                                           const char __user *const __user *argv_user, gfp_t gfp)
+                                                             const char __user *const __user *argv_user, gfp_t gfp)
 {
     return drdc_sulog_capture(KSU_SULOG_EVENT_SUCOMPAT, filename_user, argv_user, gfp);
 }

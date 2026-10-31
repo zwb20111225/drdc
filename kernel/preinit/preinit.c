@@ -97,7 +97,7 @@ static bool is_selinux_setup(const char __user *const __user *argv_user)
 }
 
 bool drdc_preinit_handle_execve(const char __user **filename_user, const char __user *const __user *argv_user,
-                               int orig_nr, struct pt_regs *regs, long *ret)
+                                int orig_nr, struct pt_regs *regs, long *ret)
 {
     const char __user *orig_filename;
     char path[sizeof(INIT_PATH) + 1];

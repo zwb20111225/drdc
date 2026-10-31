@@ -84,10 +84,7 @@ pub fn ensure_dir_exists<T: AsRef<Path>>(dir: T) -> Result<()> {
     // cannot write .allowlist, drdcd cannot write .feature_config, and root key
     // generation fails. Move the file aside and create the directory.
     if path.exists() && !path.is_dir() {
-        let name = path
-            .file_name()
-            .and_then(|s| s.to_str())
-            .unwrap_or("drdc");
+        let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("drdc");
         let backup = path.with_file_name(format!("{name}.broken.{}", std::process::id()));
         if std::fs::rename(path, &backup).is_ok() {
             log::warn!(

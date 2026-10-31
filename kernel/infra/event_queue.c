@@ -94,7 +94,7 @@ void drdc_event_queue_destroy(struct drdc_event_queue *queue)
 }
 
 int drdc_event_queue_push(struct drdc_event_queue *queue, __u16 type, __u16 flags, const void *payload, __u32 len,
-                         gfp_t gfp)
+                          gfp_t gfp)
 {
     struct drdc_event_queue_node *node = NULL;
     unsigned long irq_flags;

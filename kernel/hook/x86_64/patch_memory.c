@@ -103,10 +103,10 @@ fail:
 }
 
 // --- Architecture-specific Cache Flushing & Barriers ---
-#define drdc_flush_dcache(start, sz)                                                                                    \
+#define drdc_flush_dcache(start, sz)                                                                                   \
     do {                                                                                                               \
     } while (0)
-#define drdc_flush_icache(start, end)                                                                                   \
+#define drdc_flush_icache(start, end)                                                                                  \
     do {                                                                                                               \
     } while (0)
 #define drdc_isb() smp_mb()

@@ -61,7 +61,7 @@ static bool add_typeattribute(struct policydb *db, const char *type, const char 
 // rules
 #define strip_av(effect, invert) ((effect == AVTAB_AUDITDENY) == !invert)
 
-#define drdc_hash_for_each(node_ptr, n_slot, cur)                                                                       \
+#define drdc_hash_for_each(node_ptr, n_slot, cur)                                                                      \
     int i;                                                                                                             \
     for (i = 0; i < n_slot; ++i)                                                                                       \
         for (cur = node_ptr[i]; cur; cur = cur->next)
@@ -868,7 +868,7 @@ bool drdc_dontauditxperm(struct policydb *db, const char *src, const char *tgt, 
 
 // Type rules
 bool drdc_type_transition(struct policydb *db, const char *src, const char *tgt, const char *cls, const char *def,
-                         const char *obj)
+                          const char *obj)
 {
     if (obj) {
         return add_filename_trans(db, src, tgt, cls, def, obj);

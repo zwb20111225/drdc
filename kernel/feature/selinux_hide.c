@@ -142,7 +142,8 @@ static ssize_t my_write_access(struct file *file, char *buf, size_t size)
     struct av_decision avd;
     ssize_t length;
 
-    length = drdc_avc_has_perm_compat(current_sid(), SECINITSID_SECURITY, SECCLASS_SECURITY, SECURITY__COMPUTE_AV, NULL);
+    length =
+        drdc_avc_has_perm_compat(current_sid(), SECINITSID_SECURITY, SECCLASS_SECURITY, SECURITY__COMPUTE_AV, NULL);
     if (length)
         goto out;
 
@@ -188,7 +189,8 @@ out:
 }
 
 static int my_setprocattr(const char *name, void *value, size_t size);
-struct drdc_lsm_hook selinux_setprocattr_hook = KSU_LSM_HOOK_INIT(setprocattr, "selinux_setprocattr", my_setprocattr, 0);
+struct drdc_lsm_hook selinux_setprocattr_hook =
+    KSU_LSM_HOOK_INIT(setprocattr, "selinux_setprocattr", my_setprocattr, 0);
 
 /*
  * get the security ID of a set of credentials
@@ -443,8 +445,8 @@ static void drdc_selinux_hide_unhook()
 {
     int ret;
     if (orig_context_write) {
-        ret =
-            drdc_patch_text(context_write, &orig_context_write, sizeof(orig_context_write), KSU_PATCH_TEXT_FLUSH_DCACHE);
+        ret = drdc_patch_text(context_write, &orig_context_write, sizeof(orig_context_write),
+                              KSU_PATCH_TEXT_FLUSH_DCACHE);
         orig_context_write = NULL;
         if (ret) {
             pr_err("selinux_hide: exit: patch_text context_write err: %d\n", ret);
@@ -459,7 +461,7 @@ static void drdc_selinux_hide_unhook()
     }
     if (sel_open_handle_status_slot && orig_sel_open_handle_status) {
         ret = drdc_patch_text(sel_open_handle_status_slot, &orig_sel_open_handle_status,
-                             sizeof(orig_sel_open_handle_status), KSU_PATCH_TEXT_FLUSH_DCACHE);
+                              sizeof(orig_sel_open_handle_status), KSU_PATCH_TEXT_FLUSH_DCACHE);
         orig_sel_open_handle_status = NULL;
         if (ret) {
             pr_err("selinux_hide: exit: patch_text sel_open_handle_status err: %d\n", ret);

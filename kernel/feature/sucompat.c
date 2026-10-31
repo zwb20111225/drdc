@@ -150,8 +150,8 @@ do_orig_stat:
 }
 
 static long drdc_handle_execve_sucompat_common(const char __user **filename_user,
-                                              const char __user *const __user *argv_user, unsigned long envp,
-                                              bool execveat, int orig_nr, struct pt_regs *regs)
+                                               const char __user *const __user *argv_user, unsigned long envp,
+                                               bool execveat, int orig_nr, struct pt_regs *regs)
 {
     const char __user *fn;
     struct drdc_sulog_pending_event *pending_sucompat = NULL;
@@ -250,13 +250,13 @@ do_orig_execve:
 long drdc_handle_execve_sucompat(const char __user **filename_user, int orig_nr, struct pt_regs *regs)
 {
     return drdc_handle_execve_sucompat_common(filename_user, (const char __user *const __user *)PT_REGS_PARM2(regs),
-                                             PT_REGS_PARM3(regs), false, orig_nr, regs);
+                                              PT_REGS_PARM3(regs), false, orig_nr, regs);
 }
 
 long drdc_handle_execveat_sucompat(const char __user **filename_user, int orig_nr, struct pt_regs *regs)
 {
     return drdc_handle_execve_sucompat_common(filename_user, (const char __user *const __user *)PT_REGS_PARM3(regs),
-                                             PT_REGS_SYSCALL_PARM4(regs), true, orig_nr, regs);
+                                              PT_REGS_SYSCALL_PARM4(regs), true, orig_nr, regs);
 }
 
 // sucompat: permitted process can execute 'su' to gain root access.
