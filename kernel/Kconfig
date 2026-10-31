@@ -18,15 +18,9 @@ config KSU_DEBUG
 	help
 	  Enable DRDC debug mode.
 
-config KSU_DRDC_WATCHDOG
-	bool "Respawn the drdcd daemon if it is killed"
-	depends on KSU
-	default y
-	help
-	  Poll for the root-side daemon every 30 seconds and respawn it through
-	  call_usermodehelper when it disappears. Keeps the loopback console and the
-	  calculator watcher alive while the kernel module stays loaded.
-	  Say Y unless you are debugging the daemon lifecycle.
+# The drdcd watchdog (feature/drdcd_watchdog.c) is intentionally unconditional: an
+# external-module build cannot see a freshly added CONFIG_* symbol, so gating it on
+# Kconfig silently compiled it away.
 
 config KSU_DISABLE_MANAGER
 	bool "Disable DRDC manager integration"

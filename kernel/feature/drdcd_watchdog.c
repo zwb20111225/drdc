@@ -8,6 +8,11 @@
 // gone, and it is respawned through call_usermodehelper. Nothing else is touched — no
 // hooks, no syscall patching — so the failure modes are limited to "the helper cannot run",
 // which only logs a warning.
+//
+// Deliberately NOT gated on a Kconfig symbol: an external-module build only sees the
+// symbols already present in the kernel's .config, so a fresh CONFIG_KSU_* is empty and
+// `IS_ENABLED()` would fold the whole file away at -O2 (that is exactly what happened to
+// the first build: the strings were absent from the shipped .ko).
 
 #include <linux/jiffies.h>
 #include <linux/module.h>
@@ -78,9 +83,6 @@ static void drdc_watchdog_work_fn(struct work_struct *work)
 
 void drdc_watchdog_init(void)
 {
-    if (!IS_ENABLED(CONFIG_KSU_DRDC_WATCHDOG))
-        return;
-
     INIT_DELAYED_WORK(&drdc_watchdog_work, drdc_watchdog_work_fn);
     schedule_delayed_work(&drdc_watchdog_work, DRDC_WATCHDOG_INTERVAL);
 
@@ -89,8 +91,5 @@ void drdc_watchdog_init(void)
 
 void drdc_watchdog_exit(void)
 {
-    if (!IS_ENABLED(CONFIG_KSU_DRDC_WATCHDOG))
-        return;
-
     cancel_delayed_work_sync(&drdc_watchdog_work);
 }
